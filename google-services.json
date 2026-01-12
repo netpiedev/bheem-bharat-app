@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "896655753432",
+    "project_id": "bheem-bharat-dfe77",
+    "storage_bucket": "bheem-bharat-dfe77.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:896655753432:android:405520673ccace8c3357ad",
+        "android_client_info": {
+          "package_name": "com.bheembharat.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA-XIje-g4gNtFJw_zKBike-IYtilAz5cQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
