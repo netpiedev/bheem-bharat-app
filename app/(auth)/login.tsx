@@ -29,15 +29,14 @@ export default function LoginPage() {
     mutationFn: authenticateWithGoogle,
     onSuccess: async (data) => {
       if (data.token && data.user) {
-        // Store token in AsyncStorage
+        // Save token
         await AsyncStorage.setItem("token", data.token);
 
-        // Check if user profile is complete
-        // Navigate to profile if name, city, or dob is missing
-        if (!data.user.name || !data.user.city || !data.user.dob) {
-          router.replace("/(auth)/profile");
-        } else {
+        // Redirect
+        if (data.user.is_on_boarded) {
           router.replace("/(tabs)/home");
+        } else {
+          router.replace("/(auth)/profile");
         }
       }
     },

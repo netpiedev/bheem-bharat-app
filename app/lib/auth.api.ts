@@ -89,6 +89,7 @@ export interface GoogleAuthResponse {
     status: string;
     reported: number;
     city: string | null;
+    is_on_boarded: boolean;
     dob: Date | null;
     gender: string | null;
     notification_token: string | null;
