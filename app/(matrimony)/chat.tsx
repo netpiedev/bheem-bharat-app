@@ -12,7 +12,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { getMessages, sendMessage } from "@/app/lib/matrimony.api";
+import { getMessages, sendMessage } from "@/app/lib/chat.api";
 import { getUserIdFromToken } from "@/app/lib/jwt";
 import { WhiteHeader } from "../components/WhiteHeader";
 import { useSocket } from "../lib/socket";
@@ -97,7 +97,7 @@ export default function ChatScreen() {
 
   // Fetch messages from API
   const { data: apiMessages, isLoading } = useQuery({
-    queryKey: ["matrimony-messages", conversationId],
+    queryKey: ["chat-messages", conversationId],
     queryFn: () => getMessages(conversationId!),
     enabled: !!conversationId,
     staleTime: 15000, // Slightly reduce refetches for performance
@@ -148,7 +148,7 @@ export default function ChatScreen() {
       }
       setMessageText("");
       queryClient.invalidateQueries({
-        queryKey: ["matrimony-conversations"],
+        queryKey: ["chat-conversations"],
       });
     },
     onError: (error) => {

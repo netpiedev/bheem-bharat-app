@@ -8,7 +8,7 @@ if (!process.env.EXPO_PUBLIC_API_BASE_URL) {
 let URL = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 const axiosInstance = axios.create({
-  baseURL: URL, 
+  baseURL: URL,
   headers: {
     "Content-Type": "application/json",
   },
@@ -24,7 +24,7 @@ axiosInstance.interceptors.request.use(
       }
     } catch (error) {
     }
-    
+
     console.log("🔵 [axios] Request:", {
       method: config.method?.toUpperCase(),
       url: config.url,
@@ -32,7 +32,7 @@ axiosInstance.interceptors.request.use(
       fullURL: `${config.baseURL}${config.url}`,
       data: config.data,
     });
-    
+
     return config;
   },
   (error) => {

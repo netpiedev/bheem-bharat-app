@@ -146,10 +146,38 @@ export const useSocket = () => {
     };
   }, []);
 
-  const joinConversation = (conversationId: string) => {
-    if (socket && isConnected) {
-      socket.emit("join_conversation", { conversationId: conversationId });
+  const joinConversation = (conversationId: string, retryCount = 0) => {
+    if (!socket || !isConnected) {
+      console.warn("🔴 [socket] Cannot join conversation: socket not connected");
+      return;
     }
+
+    const maxRetries = 3;
+    
+    const handleJoined = () => {
+      socket.off("joined_conversation", handleJoined);
+      socket.off("error", handleError);
+      console.log("🟢 [socket] Successfully joined conversation:", conversationId);
+    };
+
+    const handleError = (error: { message: string }) => {
+      socket.off("joined_conversation", handleJoined);
+      socket.off("error", handleError);
+      
+      if (error.message.includes("Access denied") && retryCount < maxRetries) {
+        const delay = 200 * (retryCount + 1); // Exponential backoff: 200ms, 400ms, 600ms
+        console.log(`🟡 [socket] Access denied, retrying join in ${delay}ms (attempt ${retryCount + 1}/${maxRetries})`);
+        setTimeout(() => {
+          joinConversation(conversationId, retryCount + 1);
+        }, delay);
+      } else {
+        console.error("🔴 [socket] Failed to join conversation:", error.message);
+      }
+    };
+
+    socket.once("joined_conversation", handleJoined);
+    socket.once("error", handleError);
+    socket.emit("join_conversation", { conversationId: conversationId });
   };
 
   const leaveConversation = (conversationId: string) => {

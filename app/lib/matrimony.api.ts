@@ -1,13 +1,9 @@
 import axiosInstance from "./axiosInstance";
 import type {
-  ConversationListItem,
-  CreateMessageResponse,
-  GetMessagesResponse,
   GetProfileResponse,
   GetProfilesResponse,
   GetWishlistResponse,
   MatrimonyProfileWithUser,
-  Message,
   WishlistItem,
 } from "@/app/types/matrimony.types";
 
@@ -125,39 +121,4 @@ export const getWishlist = async (): Promise<WishlistItem[]> => {
   return data.data;
 };
 
-/**
- * Get all conversations
- */
-export const getConversations = async (): Promise<ConversationListItem[]> => {
-  const { data } = await axiosInstance.get<ConversationListItem[]>(
-    "/matrimony/chats"
-  );
-  return data;
-};
-
-/**
- * Get messages for a conversation
- */
-export const getMessages = async (
-  conversationId: string
-): Promise<Message[]> => {
-  const { data } = await axiosInstance.get<GetMessagesResponse>(
-    `/matrimony/chats/${conversationId}/messages`
-  );
-  return data.data;
-};
-
-/**
- * Send a message
- */
-export const sendMessage = async (
-  conversationId: string,
-  message: string
-): Promise<Message> => {
-  const { data } = await axiosInstance.post<CreateMessageResponse>(
-    `/matrimony/chats/${conversationId}/messages`,
-    { message }
-  );
-  return data.data;
-};
 

@@ -9,7 +9,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { getConversations } from "@/app/lib/matrimony.api";
+import { getConversations } from "@/app/lib/chat.api";
 import { WhiteHeader } from "../components/WhiteHeader";
 import type { ConversationListItem } from "@/app/types/matrimony.types";
 import { useSocket } from "../lib/socket";
@@ -19,13 +19,12 @@ export default function ChatsScreen() {
   const { isConnected } = useSocket();
 
   const { data: conversations, isLoading, isError, refetch } = useQuery({
-    queryKey: ["matrimony-conversations"],
+    queryKey: ["chat-conversations"],
     queryFn: getConversations,
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: 30000,
   });
 
   useEffect(() => {
-    // Refetch when socket connects
     if (isConnected) {
       refetch();
     }
