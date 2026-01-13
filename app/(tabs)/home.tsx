@@ -1,24 +1,24 @@
-import { useRouter } from "expo-router";
-import { ScrollView } from "react-native";
-import { useState, useEffect } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { useQuery } from "@tanstack/react-query";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import {
-  View,
+  FlatList,
+  Image,
+  Pressable,
+  ScrollView,
   Text,
   TouchableOpacity,
-  FlatList,
-  Pressable,
-  Image,
+  View,
 } from "react-native";
 
 import Header from "@/app/components/homescreen/Header";
 
-import { fetchOrganizations } from "@/app/lib/organizations.api";
-import { fetchHostels } from "@/app/lib/hostels.api";
 import { fetchAllArticles } from "@/app/lib/articles.api";
+import { fetchHostels } from "@/app/lib/hostels.api";
 import { getMyProfile } from "@/app/lib/matrimony.api";
+import { fetchOrganizations } from "@/app/lib/organizations.api";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -87,7 +87,9 @@ export default function HomeScreen() {
         <Pressable
           onPress={() =>
             router.push({
-              pathname: myProfile ? "/(matrimony)/browse" : "/(matrimony)/currentUserProfile",
+              pathname: myProfile
+                ? "/(matrimony)/browse"
+                : "/(matrimony)/currentUserProfile",
             })
           }
           className="bg-white self-start px-6 py-3 rounded-lg"
@@ -175,7 +177,7 @@ export default function HomeScreen() {
                   resizeMode="cover"
                 />
               ) : (
-                <View className="w-full h-full items-center justify-center bg-orange-500">
+                <View className="w-full h-full items-center justify-center bg-indigo-500">
                   <Ionicons name="bed-outline" size={40} color="white" />
                 </View>
               )}
@@ -277,9 +279,7 @@ const HorizontalSection = ({
         contentContainerStyle={{ paddingLeft: 20 }}
         data={data}
         // Passing index here so the cards can have alternating theme colors
-        renderItem={({ item }) =>
-          renderItem(item) as React.ReactElement 
-        }
+        renderItem={({ item }) => renderItem(item) as React.ReactElement}
         keyExtractor={(item) => item.id.toString()}
       />
     </View>
