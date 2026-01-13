@@ -11,6 +11,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { authenticateWithGoogle } from "../lib/auth.api";
 
 export default function LoginPage() {
@@ -81,7 +82,7 @@ export default function LoginPage() {
       });
     } catch (error: any) {
       setIsGoogleSigningIn(false);
-      
+
       // Handle Google Sign-In cancellation
       if (error.code === "SIGN_IN_CANCELLED") {
         console.log("User cancelled Google Sign-In");
@@ -99,28 +100,63 @@ export default function LoginPage() {
   const isLoading = isGoogleSigningIn || googleAuthMutation.isPending;
 
   return (
-    <View className="flex-1 px-4 justify-center">
-      {/* Google Button */}
-      <Pressable
-        onPress={handleSignIn}
-        disabled={isLoading}
-        className="flex-row items-center justify-center bg-white border border-slate-200 h-14 rounded-xl active:bg-slate-50 shadow-sm disabled:opacity-50"
-      >
-        {isLoading ? (
-          <ActivityIndicator size="small" color="#64748b" />
-        ) : (
-          <>
+    <SafeAreaView className="flex-1 bg-white">
+      <View className="flex-1 px-8">
+        {/* Logo & Branding Section */}
+        <View className="flex-[2] justify-center items-center">
+          <View className="w-48 h-48 items-center justify-center">
             <Image
-              source={require("../../assets/images/google.png")}
-              className="w-5 h-5 mr-3"
-              style={{ width: 20, height: 20 }}
+              source={require("../../assets/images/icon-previous.png")}
+              className="w-full h-full"
+              resizeMode="contain"
             />
-            <Text className="text-slate-900 font-semibold text-lg">
-              Continue with Google
+          </View>
+        </View>
+
+        {/* Action Section */}
+        <View className="flex-[1] pb-12">
+          <View className="mb-8">
+            <Text className="text-2xl font-bold text-slate-800">
+              Welcome back
             </Text>
-          </>
-        )}
-      </Pressable>
-    </View>
+            <Text className="text-slate-500 mt-2 text-base leading-6">
+              Join the community and contribute to a stronger Bharat.
+            </Text>
+          </View>
+
+          <Pressable
+            onPress={handleSignIn}
+            disabled={isLoading}
+            style={({ pressed }) => [
+              { transform: [{ scale: pressed ? 0.98 : 1 }] },
+            ]}
+            className="flex-row items-center justify-center bg-slate-900 h-16 rounded-2xl shadow-md disabled:opacity-70"
+          >
+            {isLoading ? (
+              <ActivityIndicator size="small" color="#ffffff" />
+            ) : (
+              <>
+                <View className="bg-white p-1.5 rounded-full mr-4">
+                  <Image
+                    source={require("../../assets/images/google.png")}
+                    className="w-5 h-5"
+                  />
+                </View>
+                <Text className="text-white font-bold text-lg">
+                  Continue with Google
+                </Text>
+              </>
+            )}
+          </Pressable>
+
+          {/* Footer */}
+          <Text className="text-center text-slate-400 text-xs mt-8 px-4">
+            By logging in, you agree to our
+            <Text className="text-slate-600 font-medium"> Terms</Text> &
+            <Text className="text-slate-600 font-medium"> Privacy Policy</Text>
+          </Text>
+        </View>
+      </View>
+    </SafeAreaView>
   );
 }
