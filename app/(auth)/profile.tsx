@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -46,6 +47,7 @@ export default function CompleteProfile() {
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [gender, setGender] = useState("MALE");
   const [city, setCity] = useState("");
   const [dob, setDob] = useState("");
@@ -70,6 +72,7 @@ export default function CompleteProfile() {
         if (mounted && user) {
           setName(user.name || "");
           setEmail(user.email || "");
+          setPhone(user.phone || "");
           setGender(user.gender || "MALE");
           setCity(user.city || "");
           if (user.dob) {
@@ -80,8 +83,7 @@ export default function CompleteProfile() {
             }
           }
         }
-      } catch {
-      }
+      } catch {}
       setLoading(false);
     }
 
@@ -99,13 +101,22 @@ export default function CompleteProfile() {
       if (dob) {
         const [day, month, year] = dob.split("/");
         if (day && month && year) {
-          formattedDob = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+          formattedDob = `${year}-${month.padStart(2, "0")}-${day.padStart(
+            2,
+            "0"
+          )}`;
         }
+      }
+
+      if (phone && phone.length < 10) {
+        Alert.alert("Invalid Phone", "Please enter a valid phone number.");
+        return;
       }
 
       await updateUserProfile({
         name: name || undefined,
         email: email || undefined,
+        phone: phone || undefined,
         city: city || undefined,
         dob: formattedDob,
         gender: gender || undefined,
@@ -180,8 +191,21 @@ export default function CompleteProfile() {
                 />
               </View>
 
-              <View className="flex-row justify-between mt-2">
-                {["MALE", "FEMALE", "OTHER"].sort().map((item) => (
+              {/* Phone Number Input */}
+              <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 mt-4">
+                <Ionicons name="call-outline" size={20} color="#64748b" />
+                <TextInput
+                  placeholder="Phone Number"
+                  placeholderTextColor="#94a3b8"
+                  value={phone}
+                  onChangeText={setPhone}
+                  keyboardType="phone-pad"
+                  className="ml-3 flex-1 text-base text-slate-900"
+                />
+              </View>
+
+              <View className="flex-row justify-between mt-4">
+                {["MALE", "FEMALE", "OTHER"].map((item) => (
                   <TouchableOpacity
                     key={item}
                     onPress={() => setGender(item)}
@@ -241,7 +265,8 @@ export default function CompleteProfile() {
                     <Ionicons name="calendar-sharp" size={22} color="#0B5ED7" />
                   </TouchableOpacity>
                 </View>
-                {isDatePickerVisible && DateTimePicker &&
+                {isDatePickerVisible &&
+                  DateTimePicker &&
                   (Platform.OS === "ios" ? (
                     <Modal
                       visible={isDatePickerVisible}
@@ -269,7 +294,15 @@ export default function CompleteProfile() {
                             }}
                             onPress={() => setIsDatePickerVisible(false)}
                           >
-                            <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 16 }}>Done</Text>
+                            <Text
+                              style={{
+                                color: "#fff",
+                                fontWeight: "bold",
+                                fontSize: 16,
+                              }}
+                            >
+                              Done
+                            </Text>
                           </Pressable>
                         </View>
                       </View>
