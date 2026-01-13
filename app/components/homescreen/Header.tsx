@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { View, Text, Modal, FlatList, Pressable } from "react-native";
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { FlatList, Modal, Pressable, Text, View } from "react-native";
 
 const INDIAN_STATES = [
   "Andaman and Nicobar Islands",
@@ -47,6 +49,8 @@ interface HeaderProps {
 }
 
 export default function Header({ onStateSelected }: HeaderProps) {
+  const router = useRouter();
+
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedState, setSelectedState] = useState("Select State");
 
@@ -75,8 +79,19 @@ export default function Header({ onStateSelected }: HeaderProps) {
 
   const handleLogout = async () => {
     try {
-      // await signOut();
-      console.log("handle signout");
+      console.log("Handle signout");
+
+      // TODO: Move it to root layout
+      GoogleSignin.configure({
+        webClientId: process.env.EXPO_PUBLIC_WEB_CLIENT_ID,
+        offlineAccess: true,
+      });
+
+      await GoogleSignin.signOut();
+      await AsyncStorage.multiRemove(["token", "user"]);
+      // TODO: Remove other user data from AsyncStorage
+
+      router.replace("/(auth)/login");
     } catch (err) {
       console.error("Logout error", err);
     }
