@@ -1,29 +1,46 @@
-import React from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { useRouter } from "expo-router";
+import React, { useMemo } from "react";
 import {
-  View,
-  Text,
-  Pressable,
-  Image,
   ActivityIndicator,
+  Image,
+  Pressable,
   ScrollView,
+  Text,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useQuery } from "@tanstack/react-query";
-import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 
 import { fetchMedia } from "@/app/lib/media.api";
-import { MediaListItem } from "@/app/types/media.types";
 
 export default function MediaScreen() {
   const router = useRouter();
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["mediaList"],
-    queryFn: fetchMedia,
+  // --- 1. Infinite Query Setup ---
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    error,
+  } = useInfiniteQuery({
+    queryKey: ["medialist"],
+    queryFn: ({ pageParam = 1 }) =>
+      fetchMedia({ pageParam: pageParam as number }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      // Check if we have more items to fetch: total count > (current page * limit)
+      const fetchedSoFar = lastPage.page * lastPage.limit;
+      return lastPage.count > fetchedSoFar ? lastPage.page + 1 : undefined;
+    },
   });
 
-  const mediaList: MediaListItem[] = data || [];
+  // Flatten nested pages into a single array
+  const mediaList = useMemo(() => {
+    return data?.pages.flatMap((page) => page.data) ?? [];
+  }, [data]);
 
   const formatDuration = (seconds: number) => {
     if (!seconds) return "";
@@ -42,14 +59,21 @@ export default function MediaScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-white" edges={["bottom"]}>
       <ScrollView
-        className="flex-1 px-5 mt-4"
+        className="flex-1"
         showsVerticalScrollIndicator={false}
+        // Removed top padding; kept side padding for the whole list
+        contentContainerStyle={{
+          paddingHorizontal: 16,
+          paddingTop: 16,
+          paddingBottom: 16,
+        }}
       >
         {mediaList.map((item) => {
           const isImage = item.file_type === "image";
-
+          const isAudio = item.file_type === "audio";
+          const isVideo = item.file_type === "video";
           const previewUri = isImage ? item.object_key : item.thumbnail_key;
 
           return (
@@ -61,35 +85,44 @@ export default function MediaScreen() {
                   params: { id: item.id },
                 })
               }
-              className="flex-row items-center bg-white border border-gray-100 rounded-2xl p-2 mb-4 shadow-sm active:opacity-70"
+              // Removed internal padding (p-2 -> p-0) to let image be flush
+              className="flex-row items-center bg-white border border-gray-100 rounded-2xl mb-3 overflow-hidden shadow-sm active:opacity-80"
+              style={{ elevation: 1 }}
             >
-              <View className="relative w-28 h-24 bg-gray-200 rounded-xl overflow-hidden">
-                <Image
-                  source={{ uri: previewUri }}
-                  className="w-full h-full"
-                  resizeMode="cover"
-                />
+              {/* Left: Media Preview (Flush with edges) */}
+              <View className="w-32 h-24 bg-gray-100 relative">
+                {previewUri ? (
+                  <Image
+                    source={{ uri: previewUri }}
+                    className="w-full h-full"
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View className="w-full h-full items-center justify-center bg-gray-50">
+                    <Ionicons
+                      name={isAudio ? "musical-note" : "videocam"}
+                      size={24}
+                      color="#CBD5E1"
+                    />
+                  </View>
+                )}
 
-                {/* Center Icon */}
-                <View className="absolute inset-0 justify-center items-center">
-                  <View className="bg-white/90 p-2 rounded-full shadow-sm">
+                {/* Type Overlay Badge */}
+                <View className="absolute top-1 left-1">
+                  <View className="bg-black/40 backdrop-blur-md p-1 rounded-lg">
                     <Ionicons
                       name={
-                        item.file_type === "audio"
-                          ? "musical-notes"
-                          : item.file_type === "video"
-                          ? "play"
-                          : "image"
+                        isAudio ? "musical-notes" : isVideo ? "play" : "image"
                       }
-                      size={16}
-                      color="#3B82F6"
+                      size={12}
+                      color="white"
                     />
                   </View>
                 </View>
 
-                {/* Duration Badge */}
+                {/* Duration Badge for non-images */}
                 {!isImage && item.duration && (
-                  <View className="absolute bottom-1 right-1 bg-black/60 px-1.5 py-0.5 rounded">
+                  <View className="absolute bottom-1 right-1 bg-black/70 px-1.5 py-0.5 rounded-md">
                     <Text className="text-white text-[10px] font-bold">
                       {formatDuration(item.duration)}
                     </Text>
@@ -97,26 +130,65 @@ export default function MediaScreen() {
                 )}
               </View>
 
-              <View className="flex-1 ml-4 pr-1">
+              {/* Right: Text Content */}
+              <View className="flex-1 px-4 py-2 justify-center">
+                <View className="flex-row items-center mb-0.5">
+                  <Text
+                    className="text-[15px] font-bold text-gray-800 flex-1"
+                    numberOfLines={1}
+                  >
+                    {item.title}
+                  </Text>
+                </View>
+
                 <Text
-                  className="text-base font-bold text-gray-800"
-                  numberOfLines={1}
+                  className="text-xs text-gray-500 leading-4"
+                  numberOfLines={2}
                 >
-                  {item.title}
-                </Text>
-                <Text className="text-xs text-gray-400 mt-1" numberOfLines={2}>
                   {item.description}
                 </Text>
+
+                {/* Minimalist File Tag */}
+                <View className="flex-row mt-2">
+                  <Text className="text-[10px] font-bold text-blue-500 uppercase tracking-tighter bg-blue-50 px-1.5 py-0.5 rounded">
+                    {item.file_type}
+                  </Text>
+                </View>
               </View>
 
-              <Ionicons
-                name="chevron-forward-circle-outline"
-                size={26}
-                color="#E5E7EB"
-              />
+              {/* Trailing Icon */}
+              <View className="pr-3">
+                <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
+              </View>
             </Pressable>
           );
         })}
+
+        {/* --- Pagination Footer --- */}
+        <View className="mt-2 mb-8">
+          {hasNextPage ? (
+            <Pressable
+              onPress={() => fetchNextPage()}
+              disabled={isFetchingNextPage}
+              className="w-full py-4 rounded-2xl bg-gray-50 border border-gray-100 items-center justify-center"
+            >
+              {isFetchingNextPage ? (
+                <ActivityIndicator size="small" color="#3B82F6" />
+              ) : (
+                <Text className="text-gray-600 font-semibold text-sm">
+                  Load More
+                </Text>
+              )}
+            </Pressable>
+          ) : mediaList.length > 0 ? (
+            <View className="py-4 items-center">
+              <View className="h-[1px] w-full bg-gray-100 absolute top-1/2" />
+              <Text className="bg-white px-4 text-gray-400 text-xs font-medium italic">
+                End of list
+              </Text>
+            </View>
+          ) : null}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );

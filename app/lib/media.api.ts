@@ -4,29 +4,27 @@ import axiosInstance from "./axiosInstance";
 import type {
   ApiListResponse,
   ApiSingleResponse,
-  Media,
   MediaDetail,
-  MediaListItem,
+  MediaListItem
 } from "@/app/types/media.types";
 
-/* Get all media */
-/*
-export const fetchMedia = async (
-  fileType: string
-): Promise<MediaListItem[]> => {
-  const res = await axiosInstance.get<ApiListResponse<MediaListItem>>(
-    `/resources/media?fileType=${encodeURIComponent(fileType)}`
-  );
-  return res.data.data;
-};
-*/
 
 /* Get all media */
-export const fetchMedia = async (): Promise<MediaListItem[]> => {
+export const fetchMedia = async ({
+  pageParam = 1
+}: {
+  pageParam?: number
+}): Promise<ApiListResponse<MediaListItem>> => {
   const res = await axiosInstance.get<ApiListResponse<MediaListItem>>(
-    "/resources/media"
+    "/resources/media",
+    {
+      params: {
+        page: pageParam,
+        limit: 10,
+      },
+    }
   );
-  return res.data.data;
+  return res.data;
 };
 
 /* Get media by id */
