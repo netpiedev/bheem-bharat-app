@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -268,6 +269,25 @@ export default function ProfileDetailsScreen() {
               About Me
             </Text>
             <Text className="text-gray-700 leading-6">{profile.about_me}</Text>
+          </View>
+        )}
+
+        {/* Images Section */}
+        {profile.images && profile.images.length > 0 && (
+          <View className="bg-gray-50 rounded-2xl p-4 mb-4">
+            <Text className="text-lg font-bold text-gray-900 mb-4">Photos</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View className="flex-row gap-3">
+                {profile.images.map((imageKey, index) => (
+                  <Image
+                    key={index}
+                    source={{ uri: imageKey }}
+                    className="w-32 h-32 rounded-xl"
+                    resizeMode="cover"
+                  />
+                ))}
+              </View>
+            </ScrollView>
           </View>
         )}
       </ScrollView>

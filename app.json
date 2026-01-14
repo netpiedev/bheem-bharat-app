@@ -50,7 +50,10 @@
         }
       ],
       "@react-native-google-signin/google-signin",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      ["expo-image-picker", {
+        "photosPermission": "The app needs access to your photos to let you upload images to your profile."
+      }]
     ],
     "experiments": {
       "typedRoutes": true,

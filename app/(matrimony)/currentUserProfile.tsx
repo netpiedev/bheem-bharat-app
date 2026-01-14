@@ -1,11 +1,13 @@
-import { createProfile, getMyProfile } from "@/app/lib/matrimony.api";
+import { createProfile, getMyProfile, uploadProfileImages } from "@/app/lib/matrimony.api";
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
     ActivityIndicator,
     Alert,
+    Image,
     KeyboardAvoidingView,
     Platform,
     Pressable,
@@ -14,6 +16,7 @@ import {
     TextInput,
     View,
 } from "react-native";
+import { Image as ExpoImage } from "expo-image";
 import { WhiteHeader } from "../components/WhiteHeader";
 
 export default function CurrentUserProfileScreen() {
@@ -179,6 +182,9 @@ export default function CurrentUserProfileScreen() {
                         </Text>
                     </View>
                 )}
+
+                {/* Images Section */}
+                <ImageUploadSection profileId={myProfile.id} images={myProfile.images || []} />
             </ScrollView>
         </View>
     );
@@ -198,6 +204,120 @@ function DetailRow({
             <Ionicons name={icon as any} size={20} color="#6B7280" />
             <Text className="text-gray-600 ml-3 flex-1">{label}:</Text>
             <Text className="text-gray-900 font-semibold">{value}</Text>
+        </View>
+    );
+}
+
+function ImageUploadSection({ profileId, images }: { profileId: string; images: string[] }) {
+    const queryClient = useQueryClient();
+    const [uploading, setUploading] = useState(false);
+
+    const uploadMutation = useMutation({
+        mutationFn: (imageUris: string[]) => uploadProfileImages(profileId, imageUris),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["matrimony-my-profile"] });
+            queryClient.invalidateQueries({ queryKey: ["matrimony-profile"] });
+            Alert.alert("Success", "Images uploaded successfully");
+        },
+        onError: (error: any) => {
+            Alert.alert(
+                "Error",
+                error?.response?.data?.message || "Failed to upload images"
+            );
+        },
+        onSettled: () => {
+            setUploading(false);
+        },
+    });
+
+    const pickImages = async () => {
+        try {
+            // Request permissions
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== "granted") {
+                Alert.alert(
+                    "Permission Required",
+                    "We need access to your photos to upload images."
+                );
+                return;
+            }
+
+            // Launch image picker
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsMultipleSelection: true,
+                quality: 0.8,
+                selectionLimit: 5 - images.length, // Limit based on remaining slots
+            });
+
+            if (!result.canceled && result.assets.length > 0) {
+                setUploading(true);
+                const imageUris = result.assets.map((asset: ImagePicker.ImagePickerAsset) => asset.uri);
+                uploadMutation.mutate(imageUris);
+            }
+        } catch (error) {
+            console.error("Error picking images:", error);
+            Alert.alert("Error", "Failed to pick images");
+        }
+    };
+
+    return (
+        <View className="bg-gray-50 rounded-2xl p-4 mb-4">
+            <View className="flex-row items-center justify-between mb-4">
+                <Text className="text-lg font-bold text-gray-900">Photos</Text>
+                {images.length < 5 && (
+                    <Pressable
+                        onPress={pickImages}
+                        disabled={uploading}
+                        className="bg-blue-600 px-4 py-2 rounded-lg disabled:opacity-50"
+                    >
+                        {uploading ? (
+                            <ActivityIndicator color="white" size="small" />
+                        ) : (
+                            <Text className="text-white font-semibold">Add Photos</Text>
+                        )}
+                    </Pressable>
+                )}
+            </View>
+
+            {images.length === 0 ? (
+                <View className="items-center py-8">
+                    <Ionicons name="images-outline" size={48} color="#9CA3AF" />
+                    <Text className="text-gray-500 mt-2 text-center">
+                        No photos yet. Add up to 5 photos to your profile.
+                    </Text>
+                </View>
+            ) : (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <View className="flex-row gap-3">
+                        {images.map((imageKey, index) => (
+                            <View key={index} className="relative">
+                                <ExpoImage
+                                    source={{ uri: imageKey }}
+                                    className="w-32 h-32 rounded-xl"
+                                    contentFit="cover"
+                                />
+                            </View>
+                        ))}
+                        {images.length < 5 && (
+                            <Pressable
+                                onPress={pickImages}
+                                disabled={uploading}
+                                className="w-32 h-32 rounded-xl border-2 border-dashed border-gray-300 items-center justify-center bg-gray-100"
+                            >
+                                {uploading ? (
+                                    <ActivityIndicator color="#6B7280" />
+                                ) : (
+                                    <>
+                                        <Ionicons name="add" size={32} color="#6B7280" />
+                                        <Text className="text-gray-500 text-xs mt-1">Add</Text>
+                                    </>
+                                )}
+                            </Pressable>
+                        )}
+                    </View>
+                </ScrollView>
+            )}
         </View>
     );
 }

@@ -121,4 +121,43 @@ export const getWishlist = async (): Promise<WishlistItem[]> => {
   return data.data;
 };
 
+/**
+ * Upload images for a matrimony profile
+ */
+export interface UploadImagesResponse {
+  status: string;
+  data: string[];
+}
+
+export const uploadProfileImages = async (
+  profileId: string,
+  imageUris: string[]
+): Promise<string[]> => {
+  const formData = new FormData();
+  
+  // Add each image to FormData
+  imageUris.forEach((uri, index) => {
+    const filename = uri.split('/').pop() || `image-${index}.jpg`;
+    const match = /\.(\w+)$/.exec(filename);
+    const type = match ? `image/${match[1]}` : 'image/jpeg';
+    
+    formData.append('images', {
+      uri,
+      name: filename,
+      type,
+    } as any);
+  });
+
+  const { data } = await axiosInstance.patch<UploadImagesResponse>(
+    `/matrimony/profiles/${profileId}/images`,
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }
+  );
+  
+  return data.data;
+};
 

@@ -20,6 +20,7 @@ export interface MatrimonyProfile {
   expected_details: Record<string, unknown> | null;
   is_verified: boolean;
   created_at: string;
+  images: string[];
 }
 
 export interface MatrimonyProfileWithUser extends MatrimonyProfile {
