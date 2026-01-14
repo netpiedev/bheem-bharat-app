@@ -79,18 +79,8 @@ export default function Header({ onStateSelected }: HeaderProps) {
 
   const handleLogout = async () => {
     try {
-      console.log("Handle signout");
-
-      // TODO: Move it to root layout
-      GoogleSignin.configure({
-        webClientId: process.env.EXPO_PUBLIC_WEB_CLIENT_ID,
-        offlineAccess: true,
-      });
-
       await GoogleSignin.signOut();
-      await AsyncStorage.multiRemove(["token", "user"]);
-      // TODO: Remove other user data from AsyncStorage
-
+      await AsyncStorage.multiRemove(["token", "user", "mobileNumber"]);
       router.replace("/(auth)/login");
     } catch (err) {
       console.error("Logout error", err);
@@ -117,12 +107,12 @@ export default function Header({ onStateSelected }: HeaderProps) {
           </Pressable>
         </View>
 
-        <Pressable
+        {/* <Pressable
           onPress={handleLogout}
           className="bg-white/20 p-2 rounded-full"
         >
           <Ionicons name="log-out-outline" size={24} color="white" />
-        </Pressable>
+        </Pressable> */}
       </View>
 
       <View className="bg-white flex-row items-center px-4 py-4 rounded-xl">
