@@ -7,8 +7,8 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
   Keyboard,
+  KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
@@ -16,9 +16,9 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { WhiteHeader } from "../components/WhiteHeader";
 import { useSocket } from "../lib/socket";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ChatScreen() {
   const { conversationId, otherUserId, otherUserName } = useLocalSearchParams<{
@@ -26,10 +26,12 @@ export default function ChatScreen() {
     otherUserId?: string;
     otherUserName?: string;
   }>();
+
   const router = useRouter();
   const queryClient = useQueryClient();
   const scrollViewRef = useRef<ScrollView>(null);
   const inputRef = useRef<TextInput>(null);
+
   const [messageText, setMessageText] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
@@ -43,18 +45,13 @@ export default function ChatScreen() {
     addMessage,
   } = useSocket();
 
-  // Get current user ID
+  /* ===================== USER ===================== */
   useEffect(() => {
     let mounted = true;
     const getUserId = async () => {
-      try {
-        const token = await AsyncStorage.getItem("token");
-        if (token) {
-          const userId = getUserIdFromToken(token);
-          if (mounted) setCurrentUserId(userId);
-        }
-      } catch (e) {
-        // ignore or show error if needed
+      const token = await AsyncStorage.getItem("token");
+      if (token && mounted) {
+        setCurrentUserId(getUserIdFromToken(token));
       }
     };
     getUserId();
@@ -63,9 +60,15 @@ export default function ChatScreen() {
     };
   }, []);
 
-  // If we have otherUserId but no conversationId, start a conversation
+  /* ===================== CONVERSATION ===================== */
   useEffect(() => {
-    if (otherUserId && !conversationId && isConnected && currentUserId && startConversation && socket && router) {
+    if (
+      otherUserId &&
+      !conversationId &&
+      isConnected &&
+      currentUserId &&
+      socket
+    ) {
       startConversation(otherUserId);
       const handler = (data: { conversationId: string }) => {
         router.setParams({ conversationId: data.conversationId });
@@ -75,231 +78,139 @@ export default function ChatScreen() {
         socket.off("conversation_started", handler);
       };
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    otherUserId,
-    conversationId,
-    isConnected,
-    currentUserId,
-    startConversation,
-    socket,
-    router,
-  ]);
+  }, [otherUserId, conversationId, isConnected, currentUserId, socket]);
 
-  // Join conversation room when conversationId is available
   useEffect(() => {
-    if (conversationId && isConnected && joinConversation && leaveConversation) {
+    if (conversationId && isConnected) {
       joinConversation(conversationId);
       return () => {
         leaveConversation(conversationId);
       };
     }
-  }, [conversationId, isConnected, joinConversation, leaveConversation]);
+  }, [conversationId, isConnected]);
 
-  // Fetch messages from API
+  /* ===================== MESSAGES ===================== */
   const { data: apiMessages, isLoading } = useQuery({
     queryKey: ["chat-messages", conversationId],
     queryFn: () => getMessages(conversationId!),
     enabled: !!conversationId,
-    staleTime: 15000,
   });
 
-  // Combine API messages with socket messages (deduplicate)
   const allMessages = (() => {
     if (!conversationId) return [];
-    const api = apiMessages || [];
-    const socketMsgs = socketMessages?.[conversationId] || [];
-    const messageMap = new Map<string, any>();
-    for (const msg of api) {
-      if (msg && msg.id) {
-        messageMap.set(msg.id, msg);
-      }
-    }
-    for (const msg of socketMsgs) {
-      if (msg && msg.id) {
-        messageMap.set(msg.id, msg);
-      }
-    }
-    return Array.from(messageMap.values()).sort(
+    const map = new Map<string, any>();
+    [
+      ...(apiMessages || []),
+      ...(socketMessages?.[conversationId] || []),
+    ].forEach((m) => m?.id && map.set(m.id, m));
+    return Array.from(map.values()).sort(
       (a, b) =>
         new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     );
   })();
 
-  // Scroll to bottom when new messages arrive
   useEffect(() => {
-    if (allMessages.length > 0) {
-      const timeout = setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: true });
-      }, 100);
-      return () => clearTimeout(timeout);
-    }
+    scrollViewRef.current?.scrollToEnd({ animated: true });
   }, [allMessages.length]);
 
+  /* ===================== SEND ===================== */
   const sendMutation = useMutation({
-    mutationFn: (message: string) => {
-      if (!conversationId) throw new Error("No conversationId");
-      return sendMessage(conversationId, message);
-    },
-    onSuccess: (newMessage) => {
-      if (conversationId && newMessage) {
-        addMessage(conversationId, newMessage);
-      }
+    mutationFn: (text: string) => sendMessage(conversationId!, text),
+    onSuccess: (msg) => {
+      addMessage(conversationId!, msg);
       setMessageText("");
-      queryClient.invalidateQueries({
-        queryKey: ["chat-conversations"],
-      });
-    },
-    onError: (error) => {
-      console.error("Failed to send message:", error);
+      Keyboard.dismiss();
+      queryClient.invalidateQueries({ queryKey: ["chat-conversations"] });
     },
   });
 
   const handleSend = useCallback(() => {
-    if (!messageText.trim() || !conversationId || sendMutation.isPending) return;
+    if (!messageText.trim() || sendMutation.isPending) return;
     sendMutation.mutate(messageText);
-  }, [messageText, conversationId, sendMutation]);
+  }, [messageText]);
 
-  if (isLoading && !conversationId) {
-    return (
-      <View className="flex-1 bg-white">
-        <WhiteHeader title={otherUserName || "Chat"} />
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#3B82F6" />
-        </View>
-      </View>
-    );
-  }
-
+  /* ===================== UI ===================== */
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "white" }}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        // keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
-        keyboardVerticalOffset={0}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 10}
       >
         <WhiteHeader title={otherUserName || "Chat"} />
 
-        {!isConnected && (
-          <View className="bg-yellow-100 px-4 py-2 border-b border-yellow-200">
-            <Text className="text-yellow-800 text-xs text-center">
-              Connection lost. Messages may be delayed.
-            </Text>
-          </View>
-        )}
-
-        {/* Messages */}
-        <View style={{ flex: 1, paddingBottom: 0 }}>
+        <View style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
           {isLoading ? (
-            <View className="flex-1 items-center justify-center py-10">
-              <ActivityIndicator size="large" color="#3B82F6" />
-              <Text className="text-gray-400 mt-4">Loading messages...</Text>
-            </View>
+            <ActivityIndicator style={{ marginTop: 40 }} />
           ) : (
             <ScrollView
               ref={scrollViewRef}
-              className="flex-1"
-              contentContainerStyle={{ padding: 16, paddingBottom: 20 }}
-              onContentSizeChange={() => {
-                scrollViewRef.current?.scrollToEnd({ animated: true });
-              }}
+              contentContainerStyle={{ padding: 16 }}
               keyboardShouldPersistTaps="handled"
             >
-              {allMessages.length > 0 ? (
-                allMessages.map((message) => {
-                  const isOwn = message.sender_id === currentUserId;
-                  return (
-                    <View
-                      key={message.id}
-                      className={`mb-3 ${isOwn ? "items-end" : "items-start"}`}
-                    >
-                      <View
-                        className={`max-w-[80%] rounded-2xl px-4 py-2 ${
-                          isOwn ? "bg-blue-600" : "bg-gray-200"
-                        }`}
-                      >
-                        <Text
-                          className={`text-base ${
-                            isOwn ? "text-white" : "text-gray-900"
-                          }`}
-                        >
-                          {message.message}
-                        </Text>
-                        <Text
-                          className={`text-xs mt-1 ${
-                            isOwn ? "text-blue-100" : "text-gray-500"
-                          }`}
-                        >
-                          {new Date(message.created_at).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </Text>
-                      </View>
-                    </View>
-                  );
-                })
-              ) : (
-                <View className="items-center justify-center py-20">
-                  <Ionicons name="chatbubbles-outline" size={64} color="#9CA3AF" />
-                  <Text className="text-gray-500 mt-4 text-center">
-                    No messages yet
-                  </Text>
-                  <Text className="text-gray-400 text-sm mt-2 text-center">
-                    Start the conversation!
-                  </Text>
-                </View>
-              )}
+              {allMessages.map((m) => {
+                const isOwn = m.sender_id === currentUserId;
+                return (
+                  <View
+                    key={m.id}
+                    style={{
+                      alignSelf: isOwn ? "flex-end" : "flex-start",
+                      marginBottom: 8,
+                      maxWidth: "75%",
+                      backgroundColor: isOwn ? "#3B82F6" : "#fff",
+                      padding: 12,
+                      borderRadius: 18,
+                    }}
+                  >
+                    <Text style={{ color: isOwn ? "white" : "#111" }}>
+                      {m.message}
+                    </Text>
+                  </View>
+                );
+              })}
             </ScrollView>
           )}
         </View>
 
-        {/* Input */}
+        {/* INPUT */}
         <View
           style={{
             borderTopWidth: 1,
             borderTopColor: "#E5E7EB",
+            padding: 12,
             backgroundColor: "white",
-            padding: 16,
-            // Remove custom inputBottom padding handling and do standard 16 padding only
-            paddingBottom: 16,
-            // Remove position: "absolute" and zIndex, keep it inside the layout flow
           }}
         >
-          <View className="flex-row items-center">
+          <View style={{ flexDirection: "row", alignItems: "flex-end" }}>
             <TextInput
               ref={inputRef}
               value={messageText}
               onChangeText={setMessageText}
-              placeholder="Type a message..."
-              className="flex-1 bg-gray-100 rounded-full px-4 py-3 mr-3"
+              placeholder="Message..."
+              placeholderTextColor="#000000"
               multiline
-              maxLength={5000}
-              blurOnSubmit={false}
-              onSubmitEditing={() => {
-                if (Platform.OS === "ios") handleSend();
+              style={{
+                flex: 1,
+                backgroundColor: "#F3F4F6",
+                borderRadius: 24,
+                paddingHorizontal: 16,
+                paddingVertical: 10,
+                marginRight: 8,
               }}
-              returnKeyType="send"
             />
+
             <Pressable
               onPress={handleSend}
-              disabled={!messageText.trim() || sendMutation.isPending}
-              className={`w-12 h-12 rounded-full items-center justify-center ${
-                messageText.trim() ? "bg-blue-600" : "bg-gray-300"
-              }`}
-              accessibilityLabel="Send Message"
-              accessibilityRole="button"
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: messageText ? "#3B82F6" : "#9CA3AF",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
             >
-              {sendMutation.isPending ? (
-                <ActivityIndicator size="small" color="#ffffff" />
-              ) : (
-                <Ionicons
-                  name="send"
-                  size={20}
-                  color={messageText.trim() ? "white" : "#9CA3AF"}
-                />
-              )}
+              <Ionicons name="arrow-up" size={22} color="white" />
             </Pressable>
           </View>
         </View>
