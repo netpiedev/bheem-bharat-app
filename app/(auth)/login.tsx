@@ -96,13 +96,19 @@ export default function LoginPage() {
       <View className="flex-1 px-8">
         {/* Logo & Branding Section */}
         <View className="flex-[2] justify-center items-center">
-          <View className="w-48 h-48 items-center justify-center">
+          <Pressable
+            className="w-48 h-48 items-center justify-center"
+            onLongPress={() => {
+              router.push("/(auth)/reviewer-login");
+            }}
+            delayLongPress={1000}
+          >
             <Image
               source={require("../../assets/images/icon-previous.png")}
               className="w-full h-full"
               resizeMode="contain"
             />
-          </View>
+          </Pressable>
         </View>
 
         {/* Action Section */}
