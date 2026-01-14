@@ -64,7 +64,12 @@ export default function Profile() {
           style: "destructive",
           onPress: async () => {
             await GoogleSignin.signOut();
-            await AsyncStorage.multiRemove(["token", "user", "mobileNumber"]);
+            await AsyncStorage.multiRemove([
+              "token",
+              "user",
+              "mobileNumber",
+              "userState",
+            ]);
             router.replace("/(auth)/login");
           },
         },
@@ -86,7 +91,12 @@ export default function Profile() {
             try {
               await deleteUserProfile();
               await GoogleSignin.signOut();
-              await AsyncStorage.multiRemove(["token", "user", "mobileNumber"]);
+              await AsyncStorage.multiRemove([
+                "token",
+                "user",
+                "mobileNumber",
+                "userState",
+              ]);
               router.replace("/(auth)/login");
             } catch (error) {
               Alert.alert(

@@ -84,6 +84,9 @@ export default function CompleteProfile() {
               setDateObj(dt);
             }
           }
+          if (user.state) {
+            await AsyncStorage.setItem("userState", user.state);
+          }
         }
       } catch {}
       setLoading(false);
@@ -115,7 +118,7 @@ export default function CompleteProfile() {
         return;
       }
 
-      await updateUserProfile({
+      const updateResponse = await updateUserProfile({
         name: name || undefined,
         email: email || undefined,
         phone: phone || undefined,
@@ -125,6 +128,15 @@ export default function CompleteProfile() {
         gender: gender || undefined,
         notification_token: notificationToken || undefined,
       });
+
+      // Save the updated user object (optional but recommended)
+      if (updateResponse?.user) {
+        await AsyncStorage.setItem("user", JSON.stringify(updateResponse.user));
+      }
+
+      if (state) {
+        await AsyncStorage.setItem("userState", state);
+      }
 
       router.replace("/(tabs)/home");
     } catch (error) {
@@ -247,7 +259,6 @@ export default function CompleteProfile() {
               </View>
 
               <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 mt-4">
-
                 <Ionicons name="location-outline" size={20} color="#64748b" />
                 <TextInput
                   placeholder="State"

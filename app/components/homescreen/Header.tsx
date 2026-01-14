@@ -56,10 +56,12 @@ export default function Header({ onStateSelected }: HeaderProps) {
 
   useEffect(() => {
     const loadState = async () => {
+      // 1. Check if there is a state saved in storage
+      // (This will be the profile state initially, or the manual choice later)
       const savedState = await AsyncStorage.getItem("userState");
+
       if (savedState) {
         setSelectedState(savedState);
-        // Sync the initial load with the parent component
         if (onStateSelected) onStateSelected(savedState);
       }
     };
@@ -67,20 +69,22 @@ export default function Header({ onStateSelected }: HeaderProps) {
   }, []);
 
   const handleSelectState = async (state: string) => {
+    // Save the manual selection to override the default profile state
     await AsyncStorage.setItem("userState", state);
     setSelectedState(state);
     setModalVisible(false);
-
-    // Trigger the callback to refresh React Query data in HomeScreen
-    if (onStateSelected) {
-      onStateSelected(state);
-    }
+    if (onStateSelected) onStateSelected(state);
   };
 
   const handleLogout = async () => {
     try {
       await GoogleSignin.signOut();
-      await AsyncStorage.multiRemove(["token", "user", "mobileNumber"]);
+      await AsyncStorage.multiRemove([
+        "token",
+        "user",
+        "mobileNumber",
+        "userState",
+      ]);
       router.replace("/(auth)/login");
     } catch (err) {
       console.error("Logout error", err);

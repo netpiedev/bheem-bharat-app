@@ -12,7 +12,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { authenticateWithGoogle } from "../lib/auth.api";
+import { authenticateWithGoogle, getUserProfile } from "../lib/auth.api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -22,10 +22,26 @@ export default function LoginPage() {
     mutationFn: authenticateWithGoogle,
     onSuccess: async (data) => {
       if (data.token && data.user) {
-        // Save token
         await AsyncStorage.setItem("token", data.token);
 
-        // Redirect
+        // 1. Fetch the full profile immediately after login
+        try {
+          const profileResponse = await getUserProfile(); // Your API call
+          const fullUser = profileResponse.user;
+
+          // 2. Save the full user and the state
+          await AsyncStorage.setItem("user", JSON.stringify(fullUser));
+
+          if (fullUser.state) {
+            await AsyncStorage.setItem("userState", fullUser.state);
+          }
+        } catch (e) {
+          console.error("Failed to fetch full profile", e);
+          // Fallback: save what we have
+          await AsyncStorage.setItem("user", JSON.stringify(data.user));
+        }
+
+        // 3. Redirect
         if (data.user.is_on_boarded) {
           router.replace("/(tabs)/home");
         } else {

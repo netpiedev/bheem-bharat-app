@@ -44,11 +44,13 @@ export default function HomeScreen() {
   const { data: organizations } = useQuery({
     queryKey: ["organizations", selectedState],
     queryFn: () => fetchOrganizations({ state: selectedState }),
+    enabled: !!selectedState, // Only run once we have a state
   });
 
   const { data: hostels } = useQuery({
     queryKey: ["hostels", selectedState],
     queryFn: () => fetchHostels({ state: selectedState }),
+    enabled: !!selectedState,
   });
 
   const { data: articles } = useQuery({
