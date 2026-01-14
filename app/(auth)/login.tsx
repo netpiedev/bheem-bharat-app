@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -17,13 +17,6 @@ import { authenticateWithGoogle } from "../lib/auth.api";
 export default function LoginPage() {
   const router = useRouter();
   const [isGoogleSigningIn, setIsGoogleSigningIn] = useState(false);
-
-  useEffect(() => {
-    GoogleSignin.configure({
-      webClientId: process.env.EXPO_PUBLIC_WEB_CLIENT_ID,
-      offlineAccess: true,
-    });
-  }, []);
 
   const googleAuthMutation = useMutation({
     mutationFn: authenticateWithGoogle,

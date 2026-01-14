@@ -79,18 +79,8 @@ export default function Header({ onStateSelected }: HeaderProps) {
 
   const handleLogout = async () => {
     try {
-      console.log("Handle signout");
-
-      // TODO: Move it to root layout
-      GoogleSignin.configure({
-        webClientId: process.env.EXPO_PUBLIC_WEB_CLIENT_ID,
-        offlineAccess: true,
-      });
-
       await GoogleSignin.signOut();
-      await AsyncStorage.multiRemove(["token", "user"]);
-      // TODO: Remove other user data from AsyncStorage
-
+      await AsyncStorage.multiRemove(["token", "user", "mobileNumber"]);
       router.replace("/(auth)/login");
     } catch (err) {
       console.error("Logout error", err);

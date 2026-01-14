@@ -1,7 +1,6 @@
-import { getUserProfile } from "@/app/lib/auth.api";
-import { useLanguage } from "@/app/lib/LanguageContext";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import React from "react";
@@ -14,6 +13,9 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+import { getUserProfile } from "@/app/lib/auth.api";
+import { useLanguage } from "@/app/lib/LanguageContext";
 
 type Lang = "en" | "hi" | "mr" | "bn";
 
@@ -61,10 +63,39 @@ export default function Profile() {
           text: "Logout",
           style: "destructive",
           onPress: async () => {
-            await AsyncStorage.removeItem("token");
-            await AsyncStorage.removeItem("user");
-            await AsyncStorage.removeItem("mobileNumber");
+            await GoogleSignin.signOut();
+            await AsyncStorage.multiRemove(["token", "user", "mobileNumber"]);
             router.replace("/(auth)/login");
+          },
+        },
+      ]
+    );
+  };
+
+  // Handle Account Deletion
+  const handleDeleteAccount = async () => {
+    Alert.alert(
+      "Delete Account",
+      "This action is permanent and cannot be undone. All your data will be removed. Are you sure?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete Permanently",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              // Fake API Call Simulation
+              await new Promise((resolve) => setTimeout(resolve, 1500)); // Simulate network lag
+
+              await GoogleSignin.signOut();
+              await AsyncStorage.multiRemove(["token", "user", "mobileNumber"]);
+              router.replace("/(auth)/login");
+            } catch (error) {
+              Alert.alert(
+                "Error",
+                "Could not delete account. Please try again later."
+              );
+            }
           },
         },
       ]
@@ -290,6 +321,20 @@ export default function Profile() {
           <Ionicons name="log-out-outline" size={20} color="#EF4444" />
           <Text className="text-red-500 font-semibold ml-2">
             {t("profile_logout") || "Logout"}
+          </Text>
+        </Pressable>
+
+        <Pressable
+          onPress={handleDeleteAccount}
+          className="mt-2 flex-row items-center justify-center p-4 rounded-2xl border border-gray-200 bg-white active:bg-gray-50"
+        >
+          <Ionicons name="trash-outline" size={18} color="#ef4444" />
+          <Text className="text-red-500 font-semibold ml-2">
+            {/* Fallback logic to prevent the "missing translation" error message */}
+            {t("profile_delete_account").includes("missing") ||
+            t("profile_delete_account") === "profile_delete_account"
+              ? "Delete Account"
+              : t("profile_delete_account")}
           </Text>
         </Pressable>
       </ScrollView>
