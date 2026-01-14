@@ -19,10 +19,13 @@ export default function WishlistScreen() {
     data: wishlist,
     isLoading,
     isError,
+    error,
     refetch,
   } = useQuery({
     queryKey: ["matrimony-wishlist"],
     queryFn: getWishlist,
+    retry: 2,
+    retryDelay: 1000,
   });
 
   const renderWishlistItem = ({ item }: { item: WishlistItem }) => {
@@ -85,11 +88,19 @@ export default function WishlistScreen() {
 
   /* ---------------- ERROR ---------------- */
   if (isError) {
+    console.error("Wishlist error:", error);
     return (
       <View className="flex-1 bg-white">
         <WhiteHeader title="Wishlist" />
         <View className="flex-1 items-center justify-center px-6">
-          <Text className="text-red-500 mb-4">Failed to load wishlist</Text>
+          <Text className="text-red-500 mb-2 text-center">
+            Failed to load wishlist
+          </Text>
+          {error && (
+            <Text className="text-gray-500 text-sm mb-4 text-center">
+              {(error as any)?.message || "Unknown error"}
+            </Text>
+          )}
           <Pressable
             onPress={() => refetch()}
             className="bg-blue-600 px-6 py-3 rounded-xl"

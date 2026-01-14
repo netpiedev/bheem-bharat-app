@@ -4,6 +4,7 @@ import {
   createProfile,
   getMyProfile,
   getProfileById,
+  getWishlist,
   removeFromWishlist,
 } from "@/app/lib/matrimony.api";
 import { Ionicons } from "@expo/vector-icons";
@@ -53,10 +54,8 @@ export default function ProfileDetailsScreen() {
   useQuery({
     queryKey: ["matrimony-wishlist"],
     queryFn: async () => {
-      const wishlist = await queryClient.fetchQuery({
-        queryKey: ["matrimony-wishlist"],
-      });
-      if (Array.isArray(wishlist)) {
+      const wishlist = await getWishlist();
+      if (Array.isArray(wishlist) && profileId) {
         const found = wishlist.some((item) => item.profile_id === profileId);
         setIsInWishlist(found);
       }
