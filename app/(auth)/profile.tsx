@@ -6,16 +6,16 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
-  ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { getUserProfile, updateUserProfile } from "../lib/auth.api";
 import { registerForPushNotifications } from "../lib/notifications";
 
@@ -148,15 +148,19 @@ export default function CompleteProfile() {
   }
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      className="flex-1 bg-white"
-    >
-      <ScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
-        showsVerticalScrollIndicator={false}
+    <SafeAreaView className="flex-1 bg-white" edges={["bottom"]}>
+      <KeyboardAwareScrollView
+        bottomOffset={62}
+        className="flex-1"
+        contentContainerStyle={{
+          flexGrow: 1,
+          justifyContent: "center",
+          paddingHorizontal: 16,
+          paddingVertical: 16,
+        }}
+        keyboardShouldPersistTaps="handled"
       >
-        <View className="flex-1 px-6 justify-between py-12">
+        <View className="flex-1 justify-between">
           <View className="mt-10">
             <Text className="text-4xl font-bold text-slate-900 tracking-tight">
               About You
@@ -348,7 +352,7 @@ export default function CompleteProfile() {
             </Text>
           </View>
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
+    </SafeAreaView>
   );
 }
