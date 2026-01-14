@@ -1,7 +1,11 @@
+import { getMessages, sendMessage } from "@/app/lib/chat.api";
+import { getUserIdFromToken } from "@/app/lib/jwt";
+import type { Message } from "@/app/types/chat.types";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useLocalSearchParams } from "expo-router";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -12,163 +16,73 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { getMessages, sendMessage } from "@/app/lib/chat.api";
-import { getUserIdFromToken } from "@/app/lib/jwt";
 import { WhiteHeader } from "../components/WhiteHeader";
 import { useSocket } from "../lib/socket";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function ChatScreen() {
-  const { conversationId, otherUserId, otherUserName } = useLocalSearchParams<{
+  const { conversationId, otherUserName } = useLocalSearchParams<{
     conversationId?: string;
-    otherUserId?: string;
     otherUserName?: string;
   }>();
-  const router = useRouter();
+
+  const scrollRef = useRef<ScrollView>(null);
   const queryClient = useQueryClient();
-  const scrollViewRef = useRef<ScrollView>(null);
-  const [messageText, setMessageText] = useState("");
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [text, setText] = useState("");
+  const [userId, setUserId] = useState<string | null>(null);
 
   const {
-    socket,
-    isConnected,
     messages: socketMessages,
+    addMessage,
     joinConversation,
     leaveConversation,
-    // sendMessage: sendSocketMessage, // unused
-    startConversation,
-    addMessage,
   } = useSocket();
 
-  // Get current user ID
+  // current user
   useEffect(() => {
-    let mounted = true;
-    const getUserId = async () => {
-      try {
-        const token = await AsyncStorage.getItem("token");
-        if (token) {
-          const userId = getUserIdFromToken(token);
-          if (mounted) setCurrentUserId(userId);
-        }
-      } catch (e) {
-        // ignore or show error if needed
-      }
-    };
-    getUserId();
-    return () => {
-      mounted = false;
-    };
+    AsyncStorage.getItem("token").then((t) => {
+      if (t) setUserId(getUserIdFromToken(t));
+    });
   }, []);
 
-  // If we have otherUserId but no conversationId, start a conversation
+  // join socket room
   useEffect(() => {
-    if (otherUserId && !conversationId && isConnected && currentUserId && startConversation && socket && router) {
-      // startConversation could trigger socket event in handler, but we need handlers in deps to appease lint
-      startConversation(otherUserId);
-      const handler = (data: { conversationId: string }) => {
-        router.setParams({ conversationId: data.conversationId });
-      };
-      socket.once("conversation_started", handler);
-      return () => {
-        socket.off("conversation_started", handler);
-      };
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    otherUserId,
-    conversationId,
-    isConnected,
-    currentUserId,
-    startConversation,
-    socket,
-    router,
-  ]);
-
-  // Join conversation room when conversationId is available
-  useEffect(() => {
-    if (conversationId && isConnected && joinConversation && leaveConversation) {
+    if (conversationId) {
       joinConversation(conversationId);
-      return () => {
-        leaveConversation(conversationId);
-      };
+      return () => leaveConversation(conversationId);
     }
-  }, [conversationId, isConnected, joinConversation, leaveConversation]);
+  }, [conversationId]);
 
-  // Fetch messages from API
-  const { data: apiMessages, isLoading } = useQuery({
-    queryKey: ["chat-messages", conversationId],
+  const { data: apiMessages = [], isLoading } = useQuery<Message[]>({
+    queryKey: ["messages", conversationId],
     queryFn: () => getMessages(conversationId!),
     enabled: !!conversationId,
-    staleTime: 15000, // Slightly reduce refetches for performance
   });
 
-  // Combine API messages with socket messages (deduplicate)
   const allMessages = (() => {
-    if (!conversationId) return [];
-    const api = apiMessages || [];
-    const socketMsgs = socketMessages?.[conversationId] || [];
-    // Make a map for deduplication (prefer socket message if id matches)
-    const messageMap = new Map<string, any>();
-    for (const msg of api) {
-      if (msg && msg.id) {
-        messageMap.set(msg.id, msg);
-      }
-    }
-    for (const msg of socketMsgs) {
-      if (msg && msg.id) {
-        messageMap.set(msg.id, msg);
-      }
-    }
-    // Sort by created_at
-    return Array.from(messageMap.values()).sort(
-      (a, b) =>
-        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    const socket = socketMessages?.[conversationId!] ?? [];
+    const map = new Map<string, Message>();
+    [...apiMessages, ...socket].forEach((m) => map.set(m.id, m));
+    return [...map.values()].sort(
+      (a, b) => +new Date(a.created_at) - +new Date(b.created_at)
     );
   })();
 
-  // Scroll to bottom when new messages arrive
-  useEffect(() => {
-    if (allMessages.length > 0) {
-      const timeout = setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: true });
-      }, 100);
-      return () => clearTimeout(timeout);
-    }
-  }, [allMessages.length]);
-
   const sendMutation = useMutation({
-    mutationFn: (message: string) => {
-      if (!conversationId) throw new Error("No conversationId");
-      return sendMessage(conversationId, message);
-    },
-    onSuccess: (newMessage) => {
-      if (conversationId && newMessage) {
-        addMessage(conversationId, newMessage);
-      }
-      setMessageText("");
+    mutationFn: (msg: string) => sendMessage(conversationId!, msg),
+    onSuccess: (msg) => {
+      addMessage(conversationId!, msg);
+      setText("");
       queryClient.invalidateQueries({
-        queryKey: ["chat-conversations"],
+        queryKey: ["matrimony-conversations"],
       });
-    },
-    onError: (error) => {
-      console.error("Failed to send message:", error);
-      // Optionally show error to user
     },
   });
 
-  const handleSend = useCallback(() => {
-    if (!messageText.trim() || !conversationId || sendMutation.isPending) return;
-    sendMutation.mutate(messageText);
-  }, [messageText, conversationId, sendMutation]);
-
-  if (isLoading && !conversationId) {
+  if (isLoading) {
     return (
       <View className="flex-1 bg-white">
-        <WhiteHeader title={otherUserName || "Chat"} />
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#3B82F6" />
-        </View>
+        <WhiteHeader title={otherUserName ?? "Chat"} />
+        <ActivityIndicator className="mt-10" />
       </View>
     );
   }
@@ -176,115 +90,49 @@ export default function ChatScreen() {
   return (
     <KeyboardAvoidingView
       className="flex-1 bg-white"
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <WhiteHeader title={otherUserName || "Chat"} />
+      <WhiteHeader title={otherUserName ?? "Chat"} />
 
-      {!isConnected && (
-        <View className="bg-yellow-100 px-4 py-2 border-b border-yellow-200">
-          <Text className="text-yellow-800 text-xs text-center">
-            Connection lost. Messages may be delayed.
-          </Text>
-        </View>
-      )}
-
-      {/* Messages */}
       <ScrollView
-        ref={scrollViewRef}
-        className="flex-1"
-        contentContainerStyle={{ padding: 16 }}
-        onContentSizeChange={() => {
-          scrollViewRef.current?.scrollToEnd({ animated: true });
-        }}
-        keyboardShouldPersistTaps="handled"
+        ref={scrollRef}
+        className="flex-1 px-4"
+        onContentSizeChange={() =>
+          scrollRef.current?.scrollToEnd({ animated: true })
+        }
       >
-        {allMessages.length > 0 ? (
-          allMessages.map((message) => {
-            const isOwn = message.sender_id === currentUserId;
-            return (
+        {allMessages.map((m) => {
+          const isMe = m.sender_id === userId;
+          return (
+            <View key={m.id} className={`mb-3 ${isMe ? "items-end" : ""}`}>
               <View
-                key={message.id}
-                className={`mb-3 ${isOwn ? "items-end" : "items-start"}`}
+                className={`px-4 py-2 rounded-2xl max-w-[80%] ${
+                  isMe ? "bg-blue-600" : "bg-gray-200"
+                }`}
               >
-                <View
-                  className={`max-w-[80%] rounded-2xl px-4 py-2 ${
-                    isOwn ? "bg-blue-600" : "bg-gray-200"
-                  }`}
-                >
-                  <Text
-                    className={`text-base ${
-                      isOwn ? "text-white" : "text-gray-900"
-                    }`}
-                  >
-                    {message.message}
-                  </Text>
-                  <Text
-                    className={`text-xs mt-1 ${
-                      isOwn ? "text-blue-100" : "text-gray-500"
-                    }`}
-                  >
-                    {new Date(message.created_at).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </Text>
-                </View>
+                <Text className={isMe ? "text-white" : "text-gray-900"}>
+                  {m.message}
+                </Text>
               </View>
-            );
-          })
-        ) : (
-          <View className="items-center justify-center py-20">
-            <Ionicons name="chatbubbles-outline" size={64} color="#9CA3AF" />
-            <Text className="text-gray-500 mt-4 text-center">
-              No messages yet
-            </Text>
-            <Text className="text-gray-400 text-sm mt-2 text-center">
-              Start the conversation!
-            </Text>
-          </View>
-        )}
+            </View>
+          );
+        })}
       </ScrollView>
 
-      {/* Input */}
-      <View className="border-t border-gray-200 bg-white p-4">
-        <View className="flex-row items-center">
-          <TextInput
-            value={messageText}
-            onChangeText={setMessageText}
-            placeholder="Type a message..."
-            className="flex-1 bg-gray-100 rounded-full px-4 py-3 mr-3"
-            multiline
-            maxLength={5000}
-            blurOnSubmit={false}
-            onSubmitEditing={() => {
-              // Don't send on hard return in multiline, unless platform triggers this only on enter (iOS).
-              if (Platform.OS === "ios") handleSend();
-            }}
-            returnKeyType="send"
-          />
-          <Pressable
-            onPress={handleSend}
-            disabled={!messageText.trim() || sendMutation.isPending}
-            className={`w-12 h-12 rounded-full items-center justify-center ${
-              messageText.trim() ? "bg-blue-600" : "bg-gray-300"
-            }`}
-            accessibilityLabel="Send Message"
-            accessibilityRole="button"
-          >
-            {sendMutation.isPending ? (
-              <ActivityIndicator size="small" color="#ffffff" />
-            ) : (
-              <Ionicons
-                name="send"
-                size={20}
-                color={messageText.trim() ? "white" : "#9CA3AF"}
-              />
-            )}
-          </Pressable>
-        </View>
+      <View className="p-4 border-t border-gray-200 flex-row items-center">
+        <TextInput
+          value={text}
+          onChangeText={setText}
+          placeholder="Type a message..."
+          className="flex-1 bg-gray-100 rounded-full px-4 py-2 mr-3"
+        />
+        <Pressable
+          onPress={() => sendMutation.mutate(text)}
+          disabled={!text.trim()}
+        >
+          <Ionicons name="send" size={22} color="#2563EB" />
+        </Pressable>
       </View>
     </KeyboardAvoidingView>
   );
 }
-

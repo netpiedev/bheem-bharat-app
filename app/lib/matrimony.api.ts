@@ -1,4 +1,3 @@
-import axiosInstance from "./axiosInstance";
 import type {
   GetProfileResponse,
   GetProfilesResponse,
@@ -6,6 +5,7 @@ import type {
   MatrimonyProfileWithUser,
   WishlistItem,
 } from "@/app/types/matrimony.types";
+import axiosInstance from "./axiosInstance";
 
 /**
  * Get all profiles with filters and pagination
@@ -46,19 +46,20 @@ export const getProfileById = async (
 /**
  * Get current user's own profile
  */
-export const getMyProfile = async (): Promise<MatrimonyProfileWithUser | null> => {
-  try {
-    const { data } = await axiosInstance.get<GetProfileResponse>(
-      "/matrimony/profiles/me"
-    );
-    return data.data;
-  } catch (error: any) {
-    if (error?.response?.status === 404) {
-      return null;
+export const getMyProfile =
+  async (): Promise<MatrimonyProfileWithUser | null> => {
+    try {
+      const { data } = await axiosInstance.get<GetProfileResponse>(
+        "/matrimony/profiles/me"
+      );
+      return data.data;
+    } catch (error: any) {
+      if (error?.response?.status === 404) {
+        return null;
+      }
+      throw error;
     }
-    throw error;
-  }
-};
+  };
 
 /**
  * Create a new matrimony profile
@@ -134,14 +135,14 @@ export const uploadProfileImages = async (
   imageUris: string[]
 ): Promise<string[]> => {
   const formData = new FormData();
-  
+
   // Add each image to FormData
   imageUris.forEach((uri, index) => {
-    const filename = uri.split('/').pop() || `image-${index}.jpg`;
+    const filename = uri.split("/").pop() || `image-${index}.jpg`;
     const match = /\.(\w+)$/.exec(filename);
-    const type = match ? `image/${match[1]}` : 'image/jpeg';
-    
-    formData.append('images', {
+    const type = match ? `image/${match[1]}` : "image/jpeg";
+
+    formData.append("images", {
       uri,
       name: filename,
       type,
@@ -153,11 +154,47 @@ export const uploadProfileImages = async (
     formData,
     {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
     }
   );
-  
+
   return data.data;
 };
 
+// ================== CHAT TYPES ==================
+
+export interface UserMini {
+  id: string;
+  name: string | null;
+  photo: string | null;
+}
+
+export interface ConversationListItem {
+  conversation_id: string;
+  user: UserMini;
+  last_message: string | null;
+  last_message_at: string | null;
+}
+
+export interface Message {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+}
+
+// ================== API RESPONSES ==================
+
+export interface GetMessagesResponse {
+  status: "success";
+  count: number;
+  data: Message[];
+}
+
+export interface CreateMessageResponse {
+  status: "success";
+  data: Message;
+}
