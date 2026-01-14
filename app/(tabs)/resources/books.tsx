@@ -2,11 +2,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import {
+  ActivityIndicator,
   Pressable,
   ScrollView,
   Text,
   View,
-  ActivityIndicator,
 } from "react-native";
 
 import { fetchBookCategories } from "@/app/lib/books.api";
@@ -19,7 +19,7 @@ export default function Books() {
     queryFn: fetchBookCategories,
   });
 
-  const bookCategories: BookCategoryListItem[] = data || [];
+  const bookCategories: BookCategoryListItem[] = data?.data || [];
 
   if (isLoading)
     return (

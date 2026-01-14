@@ -1,46 +1,67 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { useState, useMemo } from "react";
-import { ScrollView, Text, TextInput, View, Pressable } from "react-native";
-import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
 import { fetchOrganizations } from "@/app/lib/organizations.api";
-import { OrganizationListItem } from "@/app/types/organizations.types";
 
 export default function Organizations() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedState, setSelectedState] = useState<string | undefined>(
+    undefined
+  );
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["organizations"],
-    queryFn: fetchOrganizations,
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    error,
+  } = useInfiniteQuery({
+    queryKey: ["organizations", selectedState],
+    queryFn: ({ pageParam = 1 }) =>
+      fetchOrganizations({
+        pageParam: pageParam as number,
+        state: selectedState,
+      }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      // Logic: If we've fetched everything (page * limit >= count), return undefined
+      const fetchedSoFar = lastPage.page * lastPage.limit;
+      return lastPage.count > fetchedSoFar ? lastPage.page + 1 : undefined;
+    },
   });
 
-  const organizations: OrganizationListItem[] = data || [];
+  const organizations = useMemo(() => {
+    return data?.pages.flatMap((page) => page.data) ?? [];
+  }, [data]);
 
-  // useMemo ensures we only re-calculate when searchQuery or data changes
   const filteredOrganizations = useMemo(() => {
-    return organizations.filter((item) => {
-      const query = searchQuery.toLowerCase();
-      return (
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) return organizations;
+
+    return organizations.filter(
+      (item) =>
         item.name.toLowerCase().includes(query) ||
         item.city.toLowerCase().includes(query) ||
         item.state.toLowerCase().includes(query)
-      );
-    });
+    );
   }, [searchQuery, organizations]);
 
   if (isLoading)
     return (
       <View className="flex-1 justify-center items-center bg-white">
-        <Text className="text-gray-500">Loading organizations...</Text>
-      </View>
-    );
-
-  if (error)
-    return (
-      <View className="flex-1 justify-center items-center bg-white">
-        <Text className="text-red-500">Error loading data.</Text>
+        <ActivityIndicator size="large" color="#1976d2" />
       </View>
     );
 
@@ -49,29 +70,27 @@ export default function Organizations() {
       <ScrollView
         contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
         showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled" // Improves UX with search bars
+        keyboardShouldPersistTaps="handled"
       >
-        {/* Search Bar */}
         <View className="mb-6 bg-white border border-gray-200 rounded-xl flex-row items-center px-4 py-1 shadow-sm">
           <Ionicons name="search" size={18} color="#9CA3AF" />
           <TextInput
             placeholder="Search by name or location..."
             placeholderTextColor="#9CA3AF"
-            className="ml-3 flex-1 text-gray-800"
+            className="ml-3 flex-1 text-gray-800 py-2"
             value={searchQuery}
             onChangeText={setSearchQuery}
-            clearButtonMode="while-editing" // Adds clear button on iOS
+            clearButtonMode="while-editing"
           />
         </View>
 
-        {/* Results Info */}
         {searchQuery.length > 0 && (
           <Text className="text-gray-400 text-xs mb-4 px-1 uppercase font-bold tracking-wider">
-            Found {filteredOrganizations.length} results
+            Found {filteredOrganizations.length}{" "}
+            {filteredOrganizations.length === 1 ? "result" : "results"}
           </Text>
         )}
 
-        {/* Organization cards */}
         {filteredOrganizations.length > 0 ? (
           filteredOrganizations.map((item) => (
             <Pressable
@@ -123,6 +142,38 @@ export default function Organizations() {
             </Text>
           </View>
         )}
+
+        {/* Pagination Control */}
+        <View className="my-4">
+          {hasNextPage ? (
+            <Pressable
+              onPress={() => fetchNextPage()}
+              disabled={isFetchingNextPage}
+              className={`py-4 rounded-2xl items-center justify-center border ${
+                isFetchingNextPage
+                  ? "border-gray-100 bg-gray-50"
+                  : "border-blue-100 bg-blue-50"
+              }`}
+            >
+              {isFetchingNextPage ? (
+                <View className="flex-row items-center">
+                  <ActivityIndicator size="small" color="#1976d2" />
+                  <Text className="ml-2 text-gray-500 font-medium">
+                    Loading more...
+                  </Text>
+                </View>
+              ) : (
+                <Text className="text-blue-600 font-semibold text-base">
+                  Load More Organizations
+                </Text>
+              )}
+            </Pressable>
+          ) : organizations.length > 0 ? (
+            <Text className="text-center text-gray-400 text-sm italic">
+              You've reached the end of the list.
+            </Text>
+          ) : null}
+        </View>
       </ScrollView>
     </View>
   );

@@ -43,12 +43,12 @@ export default function HomeScreen() {
   // React Query - Key includes selectedState so it refetches when state changes
   const { data: organizations } = useQuery({
     queryKey: ["organizations", selectedState],
-    queryFn: () => fetchOrganizations(selectedState),
+    queryFn: () => fetchOrganizations({ state: selectedState }),
   });
 
   const { data: hostels } = useQuery({
     queryKey: ["hostels", selectedState],
-    queryFn: () => fetchHostels(selectedState),
+    queryFn: () => fetchHostels({ state: selectedState }),
   });
 
   const { data: articles } = useQuery({
@@ -156,7 +156,7 @@ export default function HomeScreen() {
         title={`Hostels ${selectedState ? `in ${selectedState}` : ""}`}
         icon="bed-outline"
         route="/resources/hostels"
-        data={hostels || []}
+        data={hostels?.data || []}
         renderItem={(item) => (
           <Pressable
             onPress={() =>
@@ -212,7 +212,7 @@ export default function HomeScreen() {
         title={`Organizations ${selectedState ? `in ${selectedState}` : ""}`}
         icon="business-outline"
         route="/resources/organizations"
-        data={organizations || []}
+        data={organizations?.data || []}
         renderItem={(item) => (
           <Pressable
             onPress={() =>

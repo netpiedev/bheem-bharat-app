@@ -9,16 +9,27 @@ import type {
 } from "@/app/types/hostels.types";
 
 /* Get all hostels */
-export const fetchHostels = async (
-  state?: string
-): Promise<HostelListItem[]> => {
+export const fetchHostels = async ({
+  pageParam = 1,
+  state,
+  city,
+}: {
+  pageParam?: number;
+  state?: string | null;
+  city?: string | null;
+}): Promise<ApiListResponse<HostelListItem>> => {
   const res = await axiosInstance.get<ApiListResponse<HostelListItem>>(
     "/resources/hostels",
     {
-      params: { state },
+      params: {
+        page: pageParam,
+        limit: 10,
+        state: state || undefined,
+        city: city || undefined
+      },
     }
   );
-  return res.data.data;
+  return res.data;
 };
 
 /* Get hostel by id */

@@ -9,16 +9,24 @@ import type {
 } from "@/app/types/organizations.types";
 
 /* Get all organizations */
-export const fetchOrganizations = async (
-  state?: string
-): Promise<OrganizationListItem[]> => {
+export const fetchOrganizations = async ({
+  pageParam = 1,
+  state,
+}: {
+  pageParam?: number;
+  state?: string;
+}): Promise<ApiListResponse<OrganizationListItem>> => {
   const res = await axiosInstance.get<ApiListResponse<OrganizationListItem>>(
     "/resources/organizations",
     {
-      params: { state },
+      params: {
+        page: pageParam,
+        limit: 10,
+        state,
+      },
     }
   );
-  return res.data.data;
+  return res.data;
 };
 
 /* Get organization by id */

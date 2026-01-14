@@ -11,22 +11,34 @@ import type {
 
 /* Get all categories */
 export const fetchBookCategories = async (): Promise<
-  BookCategoryListItem[]
+  ApiListResponse<BookCategoryListItem>
 > => {
   const res = await axiosInstance.get<ApiListResponse<BookCategoryListItem>>(
     "/resources/books/categories"
   );
-  return res.data.data;
+  return res.data;
 };
 
 /* Get books by category */
-export const fetchBooksByCategory = async (
-  category: string
-): Promise<BookListItem[]> => {
+/* Updated fetchBooksByCategory in books.api.ts */
+export const fetchBooksByCategory = async ({
+  categoryId,
+  pageParam = 1,
+}: {
+  categoryId: string;
+  pageParam?: number;
+}): Promise<ApiListResponse<BookListItem>> => {
   const res = await axiosInstance.get<ApiListResponse<BookListItem>>(
-    `/resources/books/?category=${encodeURIComponent(category)}`
+    `/resources/books/`,
+    {
+      params: {
+        category: categoryId, // Backend uses the ID
+        page: pageParam,
+        limit: 10,
+      },
+    }
   );
-  return res.data.data;
+  return res.data;
 };
 
 /* Get book by id */
