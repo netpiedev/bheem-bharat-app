@@ -48,7 +48,7 @@ export default function HomeScreen() {
 
   const { data: hostels } = useQuery({
     queryKey: ["hostels", selectedState],
-    queryFn: () => fetchHostels(selectedState),
+    queryFn: () => fetchHostels({ state: selectedState }),
   });
 
   const { data: articles } = useQuery({
@@ -156,7 +156,7 @@ export default function HomeScreen() {
         title={`Hostels ${selectedState ? `in ${selectedState}` : ""}`}
         icon="bed-outline"
         route="/resources/hostels"
-        data={hostels || []}
+        data={hostels?.data || []}
         renderItem={(item) => (
           <Pressable
             onPress={() =>
