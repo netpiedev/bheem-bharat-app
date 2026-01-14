@@ -171,9 +171,9 @@ export default function Profile() {
             <Text className="text-white text-2xl font-semibold">
               {t("profile_title")}
             </Text>
-            <Pressable className="bg-white/20 p-2.5 rounded-full">
+            {/* <Pressable className="bg-white/20 p-2.5 rounded-full">
               <Ionicons name="settings-outline" size={22} color="white" />
-            </Pressable>
+            </Pressable> */}
           </View>
         </SafeAreaView>
       </View>

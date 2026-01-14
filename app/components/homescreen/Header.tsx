@@ -107,12 +107,12 @@ export default function Header({ onStateSelected }: HeaderProps) {
           </Pressable>
         </View>
 
-        <Pressable
+        {/* <Pressable
           onPress={handleLogout}
           className="bg-white/20 p-2 rounded-full"
         >
           <Ionicons name="log-out-outline" size={24} color="white" />
-        </Pressable>
+        </Pressable> */}
       </View>
 
       <View className="bg-white flex-row items-center px-4 py-4 rounded-xl">
