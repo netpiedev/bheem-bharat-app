@@ -8,6 +8,7 @@ export interface UpdateUserProfileRequest {
   dob?: string; // Format: YYYY-MM-DD
   gender?: string;
   city?: string;
+  state?: string;
 }
 
 export interface UpdateUserProfileResponse {
@@ -22,6 +23,7 @@ export interface UpdateUserProfileResponse {
     status: string;
     reported: number;
     city: string | null;
+    state: string | null;
     dob: Date | null;
     gender: string | null;
     notification_token: string | null;
@@ -56,9 +58,11 @@ export interface GetUserProfileResponse {
     email: string | null;
     phone: string | null;
     role: string;
+    is_on_boarded: boolean;
     status: string;
     reported: number;
     city: string | null;
+    state: string | null;
     dob: Date | null;
     gender: string | null;
     notification_token: string | null;
@@ -89,6 +93,7 @@ export interface GoogleAuthResponse {
     status: string;
     reported: number;
     city: string | null;
+    state: string | null;
     is_on_boarded: boolean;
     dob: Date | null;
     gender: string | null;
@@ -118,3 +123,16 @@ export const authenticateWithGoogle = async (
   console.log("🟢 [auth.api] authenticateWithGoogle success");
   return data;
 };
+
+export const deleteUserProfile = async (): Promise<DeleteUserProfileResponse> => {
+  const { data } = await axiosInstance.delete<DeleteUserProfileResponse>(
+    "/users/profile"
+  );
+  console.log("🟢 [auth.api] deleteUserProfile success");
+  return data;
+};
+
+export interface DeleteUserProfileResponse {
+  success: boolean;
+  message: string;
+}

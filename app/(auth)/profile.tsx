@@ -50,6 +50,7 @@ export default function CompleteProfile() {
   const [phone, setPhone] = useState("");
   const [gender, setGender] = useState("MALE");
   const [city, setCity] = useState("");
+  const [state, setState] = useState("");
   const [dob, setDob] = useState("");
 
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
@@ -75,6 +76,7 @@ export default function CompleteProfile() {
           setPhone(user.phone || "");
           setGender(user.gender || "MALE");
           setCity(user.city || "");
+          setState(user.state || "");
           if (user.dob) {
             const dt = new Date(user.dob);
             if (!isNaN(dt.getTime())) {
@@ -118,6 +120,7 @@ export default function CompleteProfile() {
         email: email || undefined,
         phone: phone || undefined,
         city: city || undefined,
+        state: state || undefined,
         dob: formattedDob,
         gender: gender || undefined,
         notification_token: notificationToken || undefined,
@@ -239,6 +242,18 @@ export default function CompleteProfile() {
                   placeholderTextColor="#94a3b8"
                   value={city}
                   onChangeText={setCity}
+                  className="ml-3 flex-1 text-base text-slate-900"
+                />
+              </View>
+
+              <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 mt-4">
+
+                <Ionicons name="location-outline" size={20} color="#64748b" />
+                <TextInput
+                  placeholder="State"
+                  placeholderTextColor="#94a3b8"
+                  value={state}
+                  onChangeText={setState}
                   className="ml-3 flex-1 text-base text-slate-900"
                 />
               </View>

@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { getUserProfile } from "@/app/lib/auth.api";
+import { deleteUserProfile, getUserProfile } from "@/app/lib/auth.api";
 import { useLanguage } from "@/app/lib/LanguageContext";
 
 type Lang = "en" | "hi" | "mr" | "bn";
@@ -84,9 +84,7 @@ export default function Profile() {
           style: "destructive",
           onPress: async () => {
             try {
-              // Fake API Call Simulation
-              await new Promise((resolve) => setTimeout(resolve, 1500)); // Simulate network lag
-
+              await deleteUserProfile();
               await GoogleSignin.signOut();
               await AsyncStorage.multiRemove(["token", "user", "mobileNumber"]);
               router.replace("/(auth)/login");
@@ -227,11 +225,20 @@ export default function Profile() {
                   {user?.city ? (
                     <Text className="text-gray-400 text-sm" numberOfLines={1}>
                       {user.city}
-                      {user.state && `, ${user.state}`}
                     </Text>
                   ) : (
                     <Text className="text-gray-400 text-sm">
                       {t("profile_city") || "City not set"}
+                    </Text>
+                  )}
+
+                  {user?.state ? (
+                    <Text className="text-gray-400 text-sm" numberOfLines={1}>
+                      {user.state}
+                    </Text>
+                  ) : (
+                    <Text className="text-gray-400 text-sm">
+                      {t("profile_state") || "State not set"}
                     </Text>
                   )}
 
