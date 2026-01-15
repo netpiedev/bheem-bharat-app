@@ -66,7 +66,7 @@ export const getMyProfile =
  */
 export interface CreateProfileRequest {
   gender: "MALE" | "FEMALE" | "OTHER";
-  dob: string; // YYYY-MM-DD format
+  dob?: string | null; // YYYY-MM-DD format - optional, comes from user table
   height?: number | null;
   religion?: string | null;
   caste?: string | null;

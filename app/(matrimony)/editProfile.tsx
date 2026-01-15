@@ -3,6 +3,7 @@ import {
   updateProfile,
   uploadProfileImages,
 } from "@/app/lib/matrimony.api";
+import { getUserProfile } from "@/app/lib/auth.api";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -76,11 +77,35 @@ export default function EditProfileScreen() {
   const [siblingsCount, setSiblingsCount] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const [newImageUris, setNewImageUris] = useState<string[]>([]);
+  const [userDob, setUserDob] = useState<string | null>(null);
+  const [isDobDisabled, setIsDobDisabled] = useState(false);
+
+  // Fetch user profile to get user.dob
+  const { data: userProfile } = useQuery({
+    queryKey: ["user-profile"],
+    queryFn: getUserProfile,
+    retry: false,
+  });
 
   useEffect(() => {
-    if (myProfile) {
+    // Load user DOB from user profile - prioritize this over profile.dob
+    if (userProfile?.user?.dob) {
+      const userDobDate = new Date(userProfile.user.dob);
+      if (!isNaN(userDobDate.getTime())) {
+        const formattedDob = formatDateString(userDobDate);
+        setUserDob(formattedDob);
+        setDob(formattedDob);
+        setDateObj(userDobDate);
+        setIsDobDisabled(true);
+      }
+    }
+  }, [userProfile]);
+
+  useEffect(() => {
+    if (myProfile && !isDobDisabled) {
       setGender(myProfile.gender);
-      if (myProfile.dob) {
+      // Only use profile.dob if user.dob is not available
+      if (!userDob && myProfile.dob) {
         const dt = new Date(myProfile.dob);
         if (!isNaN(dt.getTime())) {
           setDob(formatDateString(dt));
@@ -94,7 +119,7 @@ export default function EditProfileScreen() {
       setProfession(myProfile.profession || "");
       setEducation(myProfile.education || "");
       setIncome(myProfile.income || "");
-      setAboutMeText(myProfile.about_me_text || myProfile.about_me || "");
+      setAboutMeText(myProfile.about_me_text || "");
       setCity(myProfile.city || "");
       setMotherOccupation(myProfile.mother_occupation || "");
       setFatherOccupation(myProfile.father_occupation || "");
@@ -185,8 +210,11 @@ export default function EditProfileScreen() {
 
     const updatePayload: any = {};
     if (gender !== myProfile?.gender) updatePayload.gender = gender;
-    if (formattedDob && formattedDob !== myProfile?.dob)
-      updatePayload.dob = formattedDob;
+    // Don't update dob if it's disabled (comes from user profile)
+    if (!isDobDisabled && formattedDob && formattedDob !== myProfile?.dob) {
+      // dob is no longer updated in matrimony profiles, it comes from users table
+      // updatePayload.dob = formattedDob;
+    }
     if (height !== (myProfile?.height?.toString() || ""))
       updatePayload.height = height ? parseInt(height, 10) : null;
     if (religion !== (myProfile?.religion || ""))
@@ -203,7 +231,7 @@ export default function EditProfileScreen() {
       updatePayload.income = income || null;
     if (
       aboutMeText !==
-      (myProfile?.about_me_text || myProfile?.about_me || "")
+      (myProfile?.about_me_text || "")
     )
       updatePayload.about_me_text = aboutMeText || null;
     if (city !== (myProfile?.city || "")) updatePayload.city = city || null;
@@ -366,26 +394,39 @@ export default function EditProfileScreen() {
           {/* Date of Birth */}
           <Text className="text-gray-900 font-semibold mb-2">
             Date of Birth (YYYY-MM-DD)
+            {userDob && (
+              <Text className="text-gray-500 text-sm font-normal ml-2">
+                (from user profile)
+              </Text>
+            )}
           </Text>
-          <View className="flex-row items-center bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4">
+          <View className={`flex-row items-center bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4 ${userDob ? 'opacity-60' : ''}`}>
             <TextInput
               value={dob}
               onChangeText={(text) => {
-                setDob(text);
-                const parsed = parseDateString(text);
-                if (parsed) setDateObj(parsed);
+                if (!userDob) {
+                  setDob(text);
+                  const parsed = parseDateString(text);
+                  if (parsed) setDateObj(parsed);
+                }
               }}
               placeholder="2000-01-01"
               className="flex-1 text-base text-gray-900"
               placeholderTextColor="#9CA3AF"
+              editable={!userDob}
             />
             <TouchableOpacity
-              onPress={openDatePicker}
+              onPress={userDob ? undefined : openDatePicker}
               className="ml-3"
               accessibilityLabel="Show date picker"
               accessibilityRole="button"
+              disabled={!!userDob}
             >
-              <Ionicons name="calendar-sharp" size={22} color="#0B5ED7" />
+              <Ionicons 
+                name="calendar-sharp" 
+                size={22} 
+                color={userDob ? "#9CA3AF" : "#0B5ED7"} 
+              />
             </TouchableOpacity>
           </View>
           {isDatePickerVisible &&

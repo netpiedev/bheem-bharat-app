@@ -10,11 +10,12 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -115,7 +116,7 @@ export default function ProfileDetailsScreen() {
   }
 
   if ((!profile || is404) && !isLoadingMyProfile && !myProfile) {
-    return <CreateProfileForm />;
+    return <Redirect href="/(matrimony)/currentUserProfile" />;
   }
 
   if (!profile) {
@@ -129,8 +130,10 @@ export default function ProfileDetailsScreen() {
     );
   }
 
-  const age = profile.dob
-    ? new Date().getFullYear() - new Date(profile.dob).getFullYear()
+  // Use user.dob if available, otherwise fall back to profile.dob (for backward compatibility)
+  const dobToUse = profile.user?.dob || profile.dob;
+  const age = dobToUse
+    ? new Date().getFullYear() - new Date(dobToUse).getFullYear()
     : null;
 
   return (
@@ -139,9 +142,21 @@ export default function ProfileDetailsScreen() {
       <ScrollView contentContainerStyle={{ padding: 20 }}>
         {/* HERO */}
         <View className="items-center mb-8">
-          <View className="w-28 h-28 rounded-full bg-blue-50 items-center justify-center mb-4">
-            <Ionicons name="person" size={56} color="#2563EB" />
-          </View>
+          {profile.images && profile.images.length > 0 ? (
+            <Image
+              source={{ 
+                uri: profile.images[0].startsWith("https://") 
+                  ? profile.images[0] 
+                  : `${process.env.EXPO_PUBLIC_S3_URL}/${profile.images[0]}`
+              }}
+              className="w-28 h-28 rounded-full mb-4"
+              style={{ width: 112, height: 112 }}
+            />
+          ) : (
+            <View className="w-28 h-28 rounded-full bg-blue-50 items-center justify-center mb-4">
+              <Ionicons name="person" size={56} color="#2563EB" />
+            </View>
+          )}
           <Text className="text-2xl font-bold">
             {profile.user.name || "Anonymous"}
           </Text>
@@ -158,6 +173,31 @@ export default function ProfileDetailsScreen() {
             </View>
           )}
         </View>
+
+        {/* Images Gallery */}
+        {profile.images && profile.images.length > 0 && (
+          <View className="mb-6">
+            <Text className="text-lg font-bold text-gray-900 mb-3">
+              Photos
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View className="flex-row">
+                {profile.images.map((img, index) => (
+                  <Image
+                    key={index}
+                    source={{ 
+                      uri: img.startsWith("https://") 
+                        ? img 
+                        : `${process.env.EXPO_PUBLIC_S3_URL}/${img}`
+                    }}
+                    className="w-32 h-32 rounded-xl mr-3"
+                    style={{ width: 128, height: 128 }}
+                  />
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+        )}
 
         {/* ACTIONS */}
         <View className="flex-row mb-8">
@@ -239,10 +279,10 @@ export default function ProfileDetailsScreen() {
           )}
         </InfoCard>
 
-        {profile.about_me && (
+        {profile.about_me_text && (
           <View className="bg-blue-50 rounded-2xl p-5">
             <Text className="text-lg font-bold mb-2">About Me</Text>
-            <Text className="text-gray-700 leading-6">{profile.about_me}</Text>
+            <Text className="text-gray-700 leading-6">{profile.about_me_text}</Text>
           </View>
         )}
       </ScrollView>
@@ -286,101 +326,3 @@ function DetailRow({
   );
 }
 
-/* =======================================================
-   CREATE PROFILE FORM
-======================================================= */
-function CreateProfileForm() {
-  const router = useRouter();
-  const queryClient = useQueryClient();
-  const [gender, setGender] = useState<"MALE" | "FEMALE" | "OTHER">("MALE");
-  const [dob, setDob] = useState("");
-  const [city, setCity] = useState("");
-  const [profession, setProfession] = useState("");
-  const [aboutMe, setAboutMe] = useState("");
-
-  const createMutation = useMutation({
-    mutationFn: createProfile,
-    onSuccess: () => {
-      queryClient.invalidateQueries();
-      Alert.alert("Success", "Profile created", [
-        { text: "OK", onPress: () => router.back() },
-      ]);
-    },
-  });
-
-  return (
-    <View className="flex-1 bg-white">
-      <WhiteHeader title="Create Profile" />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1"
-      >
-        <ScrollView contentContainerStyle={{ padding: 20 }}>
-          <Text className="text-3xl font-bold mb-2">Create Your Profile</Text>
-          <Text className="text-gray-600 mb-8">
-            Help others know you better 💙
-          </Text>
-
-          <Input
-            label="Date of Birth (YYYY-MM-DD)"
-            value={dob}
-            onChange={setDob}
-          />
-          <Input label="City" value={city} onChange={setCity} />
-          <Input
-            label="Profession"
-            value={profession}
-            onChange={setProfession}
-          />
-          <Input
-            label="About Me"
-            value={aboutMe}
-            onChange={setAboutMe}
-            multiline
-          />
-
-          <Pressable
-            onPress={() =>
-              createMutation.mutate({
-                gender,
-                dob,
-                city,
-                profession,
-                about_me: aboutMe,
-              })
-            }
-            className="bg-blue-600 py-5 rounded-2xl items-center mt-6"
-          >
-            <Text className="text-white font-bold text-lg">
-              Save & Continue
-            </Text>
-          </Pressable>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </View>
-  );
-}
-
-function Input({
-  label,
-  value,
-  onChange,
-  multiline,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  multiline?: boolean;
-}) {
-  return (
-    <View className="mb-5">
-      <Text className="font-semibold mb-2">{label}</Text>
-      <TextInput
-        value={value}
-        onChangeText={onChange}
-        multiline={multiline}
-        className="bg-white border border-gray-200 rounded-xl px-4 py-4 shadow-sm"
-      />
-    </View>
-  );
-}

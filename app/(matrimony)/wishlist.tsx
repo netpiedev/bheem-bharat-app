@@ -6,6 +6,7 @@ import { useRouter } from "expo-router";
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   Pressable,
   Text,
   View,
@@ -28,9 +29,22 @@ export default function WishlistScreen() {
     retryDelay: 1000,
   });
 
+  const getImageUrl = (imageKey: string) => {
+    if (imageKey.startsWith("https://")) {
+      return imageKey;
+    }
+    return `${process.env.EXPO_PUBLIC_S3_URL}/${imageKey}`;
+  };
+
   const renderWishlistItem = ({ item }: { item: WishlistItem }) => {
-    const age = item.profile.dob
-      ? new Date().getFullYear() - new Date(item.profile.dob).getFullYear()
+    // Use user.dob if available, otherwise fall back to profile.dob (for backward compatibility)
+    const dobToUse = item.profile.user?.dob || item.profile.dob;
+    const age = dobToUse
+      ? new Date().getFullYear() - new Date(dobToUse).getFullYear()
+      : null;
+
+    const primaryImage = item.profile.images && item.profile.images.length > 0 
+      ? getImageUrl(item.profile.images[0]) 
       : null;
 
     return (
@@ -45,9 +59,17 @@ export default function WishlistScreen() {
       >
         <View className="flex-row items-center">
           {/* Avatar */}
-          <View className="w-14 h-14 rounded-full bg-blue-50 items-center justify-center mr-4">
-            <Ionicons name="person" size={28} color="#2563EB" />
-          </View>
+          {primaryImage ? (
+            <Image
+              source={{ uri: primaryImage }}
+              className="w-14 h-14 rounded-full mr-4"
+              style={{ width: 56, height: 56 }}
+            />
+          ) : (
+            <View className="w-14 h-14 rounded-full bg-blue-50 items-center justify-center mr-4">
+              <Ionicons name="person" size={28} color="#2563EB" />
+            </View>
+          )}
 
           {/* Info */}
           <View className="flex-1">

@@ -27,6 +27,14 @@ function formatDateString(dateObj: Date): string {
   ].join("/");
 }
 
+function formatDateStringForAPI(dateObj: Date): string {
+  return [
+    dateObj.getFullYear(),
+    (dateObj.getMonth() + 1).toString().padStart(2, "0"),
+    dateObj.getDate().toString().padStart(2, "0"),
+  ].join("-");
+}
+
 function parseDateString(str: string): Date | null {
   const parts = str.split("/");
   if (parts.length === 3) {
@@ -101,21 +109,18 @@ export default function CompleteProfile() {
   const handleCompleteProfile = async () => {
     try {
       const notificationToken = await registerForPushNotifications();
-      let formattedDob: string | undefined;
+  
 
-      if (dob) {
-        const [day, month, year] = dob.split("/");
-        if (day && month && year) {
-          formattedDob = `${year}-${month.padStart(2, "0")}-${day.padStart(
-            2,
-            "0"
-          )}`;
-        }
-      }
-
+      
       if (phone && phone.length < 10) {
         Alert.alert("Invalid Phone", "Please enter a valid phone number.");
         return;
+      }
+
+      // Convert dob from DD/MM/YYYY to YYYY-MM-DD format for API
+      let dobForAPI: string | undefined = undefined;
+      if (dob && dateObj) {
+        dobForAPI = formatDateStringForAPI(dateObj);
       }
 
       const updateResponse = await updateUserProfile({
@@ -124,7 +129,7 @@ export default function CompleteProfile() {
         phone: phone || undefined,
         city: city || undefined,
         state: state || undefined,
-        dob: formattedDob,
+        dob: dobForAPI,
         gender: gender || undefined,
         notification_token: notificationToken || undefined,
       });

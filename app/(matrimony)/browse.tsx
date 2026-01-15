@@ -22,8 +22,21 @@ const FEMALE_AVATAR =
 const MALE_AVATAR =
   "https://static.vecteezy.com/system/resources/previews/036/594/092/non_2x/man-empty-avatar-photo-placeholder-for-social-networks-resumes-forums-and-dating-sites-male-and-female-no-photo-images-for-unfilled-user-profile-free-vector.jpg";
 
+const getImageUrl = (imageKey: string) => {
+  if (imageKey.startsWith("https://")) {
+    return imageKey;
+  }
+  return `${process.env.EXPO_PUBLIC_S3_URL}/${imageKey}`;
+};
+
 const getProfileImage = (profile: MatrimonyProfileWithUser) => {
+  // First try to get from profile images array
+  if (profile.images && profile.images.length > 0) {
+    return getImageUrl(profile.images[0]);
+  }
+  // Fallback to user photo
   if (profile.user?.photo) return profile.user.photo;
+  // Final fallback to gender-based placeholder
   return profile.gender === "FEMALE" ? FEMALE_AVATAR : MALE_AVATAR;
 };
 
@@ -46,8 +59,10 @@ export default function BrowseProfilesScreen() {
   });
 
   const renderProfile = ({ item }: { item: MatrimonyProfileWithUser }) => {
-    const age = item.dob
-      ? new Date().getFullYear() - new Date(item.dob).getFullYear()
+    // Use user.dob if available, otherwise fall back to profile.dob (for backward compatibility)
+    const dobToUse = item.user?.dob || item.dob;
+    const age = dobToUse
+      ? new Date().getFullYear() - new Date(dobToUse).getFullYear()
       : null;
 
     return (

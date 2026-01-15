@@ -4,7 +4,7 @@ export interface MatrimonyProfile {
   id: string;
   user_id: string;
   gender: Gender;
-  dob: string; // ISO date string
+  dob: string | null; // ISO date string - now stored in users table
   height: number | null;
   religion: string | null;
   caste: string | null;
@@ -12,9 +12,7 @@ export interface MatrimonyProfile {
   profession: string | null;
   education: string | null;
   income: string | null;
-  about_me: string | null; // Legacy field name, backend uses about_me_text
   about_me_text?: string | null; // Backend field name
-  state_from_user?: boolean; // Legacy field, may not exist in newer profiles
   city: string | null;
   mother_occupation: string | null;
   father_occupation: string | null;
@@ -34,6 +32,7 @@ export interface MatrimonyProfileWithUser extends MatrimonyProfile {
     email: string | null;
     phone: string;
     photo?: string | null;
+    dob?: string | null;
   };
 }
 
