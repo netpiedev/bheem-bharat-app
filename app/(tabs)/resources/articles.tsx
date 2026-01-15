@@ -19,7 +19,7 @@ export default function Articles() {
 
   /* Categories */
   const { data: categories } = useQuery({
-    queryKey: ["article-categories"],
+    queryKey: ["article-category-list"],
     queryFn: fetchArticleCategories,
   });
 
@@ -32,7 +32,7 @@ export default function Articles() {
     isLoading,
     isRefetching,
   } = useInfiniteQuery({
-    queryKey: ["articles", selectedCategory],
+    queryKey: ["article-list", selectedCategory],
     // Explicitly type and cast pageParam to ensure fetchArticles accepts it
     queryFn: ({ pageParam }) =>
       fetchArticles(pageParam as number, LIMIT, selectedCategory),

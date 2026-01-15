@@ -15,7 +15,7 @@ import {
 
 import Header from "@/app/components/homescreen/Header";
 
-import { fetchAllArticles } from "@/app/lib/articles.api";
+import { fetchArticles } from "@/app/lib/articles.api";
 import { fetchHostels } from "@/app/lib/hostels.api";
 import { getMyProfile } from "@/app/lib/matrimony.api";
 import { fetchOrganizations } from "@/app/lib/organizations.api";
@@ -42,28 +42,26 @@ export default function HomeScreen() {
 
   // React Query - Key includes selectedState so it refetches when state changes
   const { data: organizations } = useQuery({
-    queryKey: ["organizations", selectedState],
+    queryKey: ["organizations-home", selectedState],
     queryFn: () => fetchOrganizations({ state: selectedState }),
     enabled: !!selectedState, // Only run once we have a state
   });
 
   const { data: hostels } = useQuery({
-    queryKey: ["hostels", selectedState],
+    queryKey: ["hostels-home", selectedState],
     queryFn: () => fetchHostels({ state: selectedState }),
     enabled: !!selectedState,
   });
 
   const { data: articles } = useQuery({
-    queryKey: ["articles"], // Articles usually aren't filtered by state, but you can add it here too
-    queryFn: fetchAllArticles,
+    queryKey: ["articles-home"],
+    queryFn: () => fetchArticles(1, 5),
   });
 
   const { data: myProfile } = useQuery({
     queryKey: ["matrimony-my-profile"],
     queryFn: () => getMyProfile(),
   });
-
-  console.log(myProfile);
 
   return (
     <ScrollView className="flex-1 bg-white">
@@ -105,7 +103,7 @@ export default function HomeScreen() {
         title="News & Articles"
         route="/resources/articles"
         icon="newspaper-outline"
-        data={articles || []}
+        data={articles?.data || []}
         renderItem={(item) => (
           <Pressable
             onPress={() =>
