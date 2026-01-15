@@ -1,7 +1,11 @@
-import axiosInstance from "@/app/lib/axiosInstance";
+import {
+  fetchScholarships,
+  fetchScholarshipStates,
+} from "@/app/lib/scholarships.api";
 import { Ionicons } from "@expo/vector-icons";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -10,66 +14,55 @@ import {
   View,
 } from "react-native";
 
-/* ---------------- TYPES ---------------- */
-
-type ScholarshipState = {
-  id: string;
-  name: string;
-};
-
-type Scholarship = {
-  id: string;
-  title: string;
-  description: string;
-  state_id: string;
-  state_name: string;
-  last_date: string;
-};
-
-/* ---------------- SCREEN ---------------- */
-
 export default function Scholarships() {
   const router = useRouter();
-
-  const [states, setStates] = useState<ScholarshipState[]>([]);
-  const [scholarships, setScholarships] = useState<Scholarship[]>([]);
-
-  const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
-
   const [selectedState, setSelectedState] = useState<string | null>(null);
+  const LIMIT = 10;
 
-  /* ---------------- FETCH DATA ---------------- */
+  /* ---------------- QUERIES ---------------- */
 
-  const fetchStates = async () => {
-    const res = await axiosInstance.get("/resources/scholarships/states");
-    setStates(res.data.data);
-  };
+  const { data: statesData } = useQuery({
+    queryKey: ["scholarship-states"],
+    queryFn: fetchScholarshipStates,
+  });
 
-  const fetchScholarships = async (stateName?: string) => {
-    setLoading(true);
+  const {
+    data: scholarshipPages,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    refetch,
+  } = useInfiniteQuery({
+    queryKey: ["scholarships", selectedState],
+    queryFn: ({ pageParam = 1 }) =>
+      fetchScholarships(pageParam, LIMIT, selectedState ?? undefined),
+    getNextPageParam: (lastPage, allPages) => {
+      const totalFetched = allPages.length * LIMIT;
+      return totalFetched < lastPage.count ? allPages.length + 1 : undefined;
+    },
+    initialPageParam: 1,
+  });
 
-    const res = await axiosInstance.get("/resources/scholarships", {
-      params: stateName ? { state: stateName } : undefined,
-    });
+  const states = statesData?.data || [];
+  const allScholarships = useMemo(
+    () => scholarshipPages?.pages.flatMap((page) => page.data) || [],
+    [scholarshipPages]
+  );
 
-    setScholarships(res.data.data);
-    setLoading(false);
-  };
+  /* ---------------- ACTIONS ---------------- */
 
-  useEffect(() => {
-    fetchStates();
-    fetchScholarships();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  /* ---------------- APPLY FILTER ---------------- */
-
-  const applyFilter = async () => {
-    await fetchScholarships(selectedState ?? undefined);
+  const applyFilter = () => {
+    refetch();
     setShowFilters(false);
   };
 
-  /* ---------------- UI ---------------- */
+  const handleReset = () => {
+    setSelectedState(null);
+    setShowFilters(false);
+    // The queryKey change will trigger a refetch automatically
+  };
 
   return (
     <View className="flex-1 bg-white">
@@ -88,12 +81,12 @@ export default function Scholarships() {
           </Text>
         </Pressable>
 
-        {/* LOADING */}
-        {loading && <ActivityIndicator size="large" color="#0B5ED7" />}
+        {/* LOADING STATE */}
+        {isLoading && <ActivityIndicator size="large" color="#0B5ED7" />}
 
         {/* SCHOLARSHIP LIST */}
-        {!loading &&
-          scholarships.map((item) => (
+        {!isLoading &&
+          allScholarships.map((item) => (
             <Pressable
               key={item.id}
               onPress={() =>
@@ -124,6 +117,23 @@ export default function Scholarships() {
               </Text>
             </Pressable>
           ))}
+
+        {/* LOAD MORE BUTTON */}
+        {hasNextPage && (
+          <Pressable
+            onPress={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
+            className="mt-2 py-4 rounded-2xl bg-gray-50 border border-dashed border-gray-300 items-center justify-center"
+          >
+            {isFetchingNextPage ? (
+              <ActivityIndicator size="small" color="#0B5ED7" />
+            ) : (
+              <Text className="text-[#0B5ED7] font-medium text-sm">
+                Load More Scholarships
+              </Text>
+            )}
+          </Pressable>
+        )}
       </ScrollView>
 
       {/* FILTER PANEL (BOTTOM SHEET) */}
@@ -163,11 +173,7 @@ export default function Scholarships() {
           {/* ACTIONS */}
           <View className="flex-row mt-5 gap-3">
             <Pressable
-              onPress={() => {
-                setSelectedState(null);
-                fetchScholarships();
-                setShowFilters(false);
-              }}
+              onPress={handleReset}
               className="flex-1 py-3 rounded-xl border border-gray-400 items-center"
             >
               <Text className="text-gray-600">Reset</Text>
