@@ -12,10 +12,14 @@ export interface MatrimonyProfile {
   profession: string | null;
   education: string | null;
   income: string | null;
-  about_me: string | null;
-  state_from_user: boolean;
+  about_me: string | null; // Legacy field name, backend uses about_me_text
+  about_me_text?: string | null; // Backend field name
+  state_from_user?: boolean; // Legacy field, may not exist in newer profiles
   city: string | null;
   mother_occupation: string | null;
+  father_occupation: string | null;
+  state: string | null;
+  village: string | null;
   siblings_count: number | null;
   expected_details: Record<string, unknown> | null;
   is_verified: boolean;

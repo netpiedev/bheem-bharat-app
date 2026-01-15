@@ -1,4 +1,6 @@
+import { loginReviewer } from "@/app/lib/auth.api";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Stack, useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -27,19 +29,26 @@ export default function ReviewerLogin() {
 
     setLoading(true);
     try {
-      // Replace this with your actual reviewer login API call
-      // const response = await loginReviewer({ email, password });
+      const response = await loginReviewer({ email, password });
 
-      console.log("Reviewer Login Attempt:", email);
+      // Save token
+      await AsyncStorage.setItem("token", response.token);
+      
+      // Save user data
+      await AsyncStorage.setItem("user", JSON.stringify(response.user));
 
-      // Simulation
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      // On success:
-      // await AsyncStorage.setItem("token", response.token);
-      // router.replace("/(tabs)/home");
-    } catch (error) {
-      Alert.alert("Login Failed", "Invalid credentials for reviewer access.");
+      Alert.alert("Success", "Login successful!", [
+        {
+          text: "OK",
+          onPress: () => router.replace("/(tabs)/home"),
+        },
+      ]);
+    } catch (error: any) {
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Invalid credentials for reviewer access.";
+      Alert.alert("Login Failed", errorMessage);
     } finally {
       setLoading(false);
     }

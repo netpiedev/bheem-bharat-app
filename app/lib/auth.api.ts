@@ -49,6 +49,36 @@ export const updateUserProfile = async (
 /**
  * Get user profile (unchanged, included for completeness).
  */
+export interface ReviewerLoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface ReviewerLoginResponse {
+  success: boolean;
+  message: string;
+  user: {
+    id: string;
+    name: string | null;
+    email: string | null;
+    phone: string | null;
+    role: string;
+    status: string;
+    created_at: string;
+  };
+  token: string;
+}
+
+export const loginReviewer = async (
+  payload: ReviewerLoginRequest
+): Promise<ReviewerLoginResponse> => {
+  const { data } = await axiosInstance.post<ReviewerLoginResponse>(
+    "/auth/reviewer/login",
+    payload
+  );
+  return data;
+};
+
 export interface GetUserProfileResponse {
   success: boolean;
   message: string;

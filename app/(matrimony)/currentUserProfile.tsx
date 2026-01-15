@@ -17,6 +17,7 @@ import {
 import { WhiteHeader } from "../components/WhiteHeader";
 
 export default function CurrentUserProfileScreen() {
+  const router = useRouter();
   // GET CURRENT USER PROFILE
   const {
     data: myProfile,
@@ -90,6 +91,14 @@ export default function CurrentUserProfileScreen() {
               </Text>
             </View>
           )}
+          {/* Edit Button */}
+          <Pressable
+            onPress={() => router.push("/(matrimony)/editProfile")}
+            className="mt-4 bg-blue-600 px-6 py-3 rounded-xl flex-row items-center"
+          >
+            <Ionicons name="create-outline" size={18} color="white" />
+            <Text className="text-white font-semibold ml-2">Edit Profile</Text>
+          </Pressable>
         </View>
 
         {/* Details */}
@@ -145,13 +154,13 @@ export default function CurrentUserProfileScreen() {
           )}
         </View>
 
-        {myProfile.about_me && (
+        {myProfile.about_me_text && (
           <View className="bg-gray-50 rounded-2xl p-4 mb-4">
             <Text className="text-lg font-bold text-gray-900 mb-2">
               About Me
             </Text>
             <Text className="text-gray-700 leading-6">
-              {myProfile.about_me}
+              {myProfile.about_me_text}
             </Text>
           </View>
         )}

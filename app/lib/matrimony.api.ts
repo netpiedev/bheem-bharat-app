@@ -162,6 +162,45 @@ export const uploadProfileImages = async (
   return data.data;
 };
 
+/**
+ * Update matrimony profile
+ */
+export interface UpdateProfileRequest {
+  gender?: "MALE" | "FEMALE" | "OTHER";
+  dob?: string; // YYYY-MM-DD format
+  height?: number | null;
+  religion?: string | null;
+  caste?: string | null;
+  region?: string | null;
+  profession?: string | null;
+  education?: string | null;
+  income?: string | null;
+  about_me_text?: string | null;
+  city?: string | null;
+  mother_occupation?: string | null;
+  father_occupation?: string | null;
+  state?: string | null;
+  village?: string | null;
+  siblings_count?: number | null;
+  expected_details?: Record<string, unknown> | null;
+}
+
+export interface UpdateProfileResponse {
+  status: string;
+  message: string;
+  data: MatrimonyProfileWithUser;
+}
+
+export const updateProfile = async (
+  payload: UpdateProfileRequest
+): Promise<MatrimonyProfileWithUser> => {
+  const { data } = await axiosInstance.patch<UpdateProfileResponse>(
+    "/matrimony/profiles/me",
+    payload
+  );
+  return data.data;
+};
+
 // ================== CHAT TYPES ==================
 
 export interface UserMini {
