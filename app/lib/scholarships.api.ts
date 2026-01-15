@@ -16,26 +16,26 @@ import {
  * Get all scholarship states (dropdown)
  * GET /resources/scholarships/states
  */
-export const fetchScholarshipStates = async (): Promise<ScholarshipState[]> => {
+export const fetchScholarshipStates = async (): Promise<ApiListResponse<ScholarshipState>> => {
   const res = await axiosInstance.get<ApiListResponse<ScholarshipState>>(
     "/resources/scholarships/states"
   );
 
-  return res.data.data;
+  return res.data;
 };
 
-/**
- * Get all scholarships
- * GET /resources/scholarships
- */
-export const fetchAllScholarships = async (): Promise<
-  ScholarshipListItem[]
-> => {
-  const res = await axiosInstance.get<ApiListResponse<ScholarshipListItem>>(
-    "/resources/scholarships"
-  );
+export const fetchScholarships = async (
+  page = 1,
+  limit = 10,
+  stateName?: string
+): Promise<ApiListResponse<ScholarshipListItem>> => {
+  const params: any = { page, limit };
+  if (stateName) params.state = stateName;
 
-  return res.data.data;
+  const res = await axiosInstance.get<ApiListResponse<ScholarshipListItem>>("/resources/scholarships", {
+    params,
+  });
+  return res.data;
 };
 
 /**
@@ -44,7 +44,7 @@ export const fetchAllScholarships = async (): Promise<
  */
 export const fetchScholarshipsByState = async (
   stateName: string
-): Promise<ScholarshipListItem[]> => {
+): Promise<ApiListResponse<ScholarshipListItem>> => {
   if (!stateName) {
     throw new Error("stateName is required");
   }
@@ -56,7 +56,7 @@ export const fetchScholarshipsByState = async (
     }
   );
 
-  return res.data.data;
+  return res.data;
 };
 
 /**

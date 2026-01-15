@@ -1,60 +1,47 @@
+import type {
+  ApiListResponse,
+  ApiSingleResponse,
+  Law,
+  LawCategory
+} from "@/app/types/laws.types";
 import axiosInstance from "./axiosInstance";
-
-// ==========================================
-// Types
-// ==========================================
-
-export interface ApiListResponse<T> {
-  status: string;
-  count: number;
-  data: T[];
-}
-
-export interface ApiSingleResponse<T> {
-  status: string;
-  data: T;
-}
-
-export interface LawCategory {
-  id: string;
-  name: string;
-  created_at: string;
-}
-
-export interface Law {
-  id: string;
-  title: string;
-  short_description: string;
-  full_description: string;
-  important_points: string[];
-  category: string;
-  act_year: string;
-  official_url: string;
-  created_at: string;
-}
-
-// ==========================================
-// Fetch Functions
-// ==========================================
 
 /**
  * Get all Law Categories
  * Endpoint: /resources/laws/categories
  */
-export const fetchLawCategories = async (): Promise<LawCategory[]> => {
+export const fetchLawCategories = async (): Promise<ApiListResponse<LawCategory>> => {
   const res = await axiosInstance.get<ApiListResponse<LawCategory>>(
     "/resources/laws/categories"
   );
-  return res.data.data;
+  return res.data;
 };
 
+// /**
+//  * Get all Laws (List View)
+//  * Endpoint: /resources/laws/
+//  */
+// export const fetchLaws = async (): Promise<Law[]> => {
+//   const res = await axiosInstance.get<ApiListResponse<Law>>("/resources/laws/");
+//   return res.data.data;
+// };
 /**
- * Get all Laws (List View)
- * Endpoint: /resources/laws/
+ * Get Laws with Pagination and Category filtering
+ * Endpoint: /resources/laws/?page=1&limit=10&category=Name
  */
-export const fetchLaws = async (): Promise<Law[]> => {
-  const res = await axiosInstance.get<ApiListResponse<Law>>("/resources/laws/");
-  return res.data.data;
+export const fetchLaws = async (page = 1, limit = 10, category?: string): Promise<ApiListResponse<Law>> => {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+  });
+
+  // If the category is not "All", add it to params
+  if (category && category !== "All") {
+    params.append("category", category);
+  }
+
+  const res = await axiosInstance.get<ApiListResponse<Law>>(`/resources/laws/?${params.toString()}`);
+  return res.data; // Return the whole response object to get the 'count'
 };
 
 /**

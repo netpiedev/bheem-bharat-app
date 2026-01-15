@@ -1,52 +1,63 @@
 import { fetchLawCategories, fetchLaws } from "@/app/lib/laws.api";
 import { Ionicons } from "@expo/vector-icons";
-import { useQuery } from "@tanstack/react-query";
-import { useRouter } from "expo-router"; // <--- 1. Import useRouter
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  FlatList,
   Pressable,
   RefreshControl,
-  ScrollView,
   Text,
   View,
 } from "react-native";
 
 export default function Legal() {
-  const router = useRouter(); // <--- 2. Initialize router
+  const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const LIMIT = 10;
 
-  // --- Queries ---
-  const {
-    data: categoriesData,
-    isLoading: isCategoriesLoading,
-    refetch: refetchCategories,
-  } = useQuery({ queryKey: ["law-categories"], queryFn: fetchLawCategories });
-
-  const {
-    data: lawsData,
-    isLoading: isLawsLoading,
-    refetch: refetchLaws,
-    isRefetching,
-  } = useQuery({ queryKey: ["laws"], queryFn: fetchLaws });
-
-  const onRefresh = () => {
-    refetchCategories();
-    refetchLaws();
-  };
+  // --- Category Query ---
+  const { data: catResponse, isLoading: isCategoriesLoading } = useQuery({
+    queryKey: ["law-categories"],
+    queryFn: fetchLawCategories,
+  });
 
   const categories = useMemo(() => {
-    const fetchedNames = categoriesData?.map((c) => c.name) || [];
+    // Note: accessing .data because your fetchLawCategories returns ApiListResponse
+    const fetchedNames = catResponse?.data?.map((c) => c.name) || [];
     return ["All", ...fetchedNames];
-  }, [categoriesData]);
+  }, [catResponse]);
 
-  const filteredLaws = useMemo(() => {
-    if (!lawsData) return [];
-    if (selectedCategory === "All") return lawsData;
-    return lawsData.filter((item) => item.category === selectedCategory);
-  }, [selectedCategory, lawsData]);
+  // --- Infinite Laws Query ---
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: isLawsLoading,
+    refetch,
+    isRefetching,
+  } = useInfiniteQuery({
+    queryKey: ["laws", "manual-load", selectedCategory],
+    queryFn: ({ pageParam = 1 }) =>
+      fetchLaws(pageParam as number, LIMIT, selectedCategory),
+    getNextPageParam: (lastPage, allPages) => {
+      const totalFetched = allPages.length * LIMIT;
+      return totalFetched < lastPage.count ? allPages.length + 1 : undefined;
+    },
+    initialPageParam: 1,
+  });
 
-  if (isCategoriesLoading || isLawsLoading) {
+  const allLaws = useMemo(() => {
+    return data?.pages.flatMap((page) => page.data) || [];
+  }, [data]);
+
+  const handleCategoryChange = (cat: string) => {
+    setSelectedCategory(cat);
+  };
+
+  if (isCategoriesLoading || (isLawsLoading && !isRefetching)) {
     return (
       <View className="flex-1 bg-white items-center justify-center">
         <ActivityIndicator size="large" color="#0B5ED7" />
@@ -56,27 +67,17 @@ export default function Legal() {
 
   return (
     <View className="flex-1 bg-white">
-      <ScrollView
-        contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefetching}
-            onRefresh={onRefresh}
-            colors={["#0B5ED7"]}
-          />
-        }
-      >
-        {/* Filters */}
-        <ScrollView
+      {/* Category Horizontal Selector */}
+      <View className="py-4 border-b border-gray-50">
+        <FlatList
           horizontal
+          data={categories}
           showsHorizontalScrollIndicator={false}
-          className="mb-6"
-        >
-          {categories.map((cat) => (
+          contentContainerStyle={{ paddingHorizontal: 16 }}
+          keyExtractor={(item) => item}
+          renderItem={({ item: cat }) => (
             <Pressable
-              key={cat}
-              onPress={() => setSelectedCategory(cat)}
+              onPress={() => handleCategoryChange(cat)}
               className={`px-5 py-2.5 rounded-full mr-2 border ${
                 selectedCategory === cat
                   ? "bg-[#0B5ED7] border-[#0B5ED7]"
@@ -91,20 +92,29 @@ export default function Legal() {
                 {cat}
               </Text>
             </Pressable>
-          ))}
-        </ScrollView>
+          )}
+        />
+      </View>
 
-        {/* Laws List */}
-        {filteredLaws.map((item) => (
+      <FlatList
+        data={allLaws}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={refetch}
+            colors={["#0B5ED7"]}
+          />
+        }
+        renderItem={({ item }) => (
           <Pressable
-            key={item.id}
-            // --- 3. Update onPress to navigate ---
-            onPress={() => {
+            onPress={() =>
               router.push({
-                pathname: "/(leagal)/leagleDetaildScreen", // Ensure this matches your exact filename
+                pathname: "/(leagal)/leagleDetaildScreen",
                 params: { id: item.id },
-              });
-            }}
+              })
+            }
             className="mb-4 w-full bg-white border border-[#CFE2FF] rounded-2xl p-5 shadow-sm"
           >
             <View className="flex-row items-start">
@@ -113,14 +123,14 @@ export default function Legal() {
               </View>
               <View className="flex-1">
                 <View className="flex-row justify-between items-start mb-1">
-                  <Text className="font-bold text-gray-900 text-[16px] flex-1 mr-2 leading-6">
+                  <Text
+                    className="font-bold text-gray-900 text-[16px] flex-1 mr-2 leading-6"
+                    numberOfLines={2}
+                  >
                     {item.title}
                   </Text>
                   <View className="bg-[#CCFBF1] px-2 py-1 rounded border border-[#99F6E4]">
-                    <Text
-                      className="text-[#0F766E] text-[10px] font-bold uppercase"
-                      numberOfLines={1}
-                    >
+                    <Text className="text-[#0F766E] text-[10px] font-bold uppercase">
                       {item.category}
                     </Text>
                   </View>
@@ -134,8 +144,36 @@ export default function Legal() {
               </View>
             </View>
           </Pressable>
-        ))}
-      </ScrollView>
+        )}
+        // ListFooterComponent handles the "Load More" button
+        ListFooterComponent={() => (
+          <View className="mt-4 mb-8">
+            {hasNextPage ? (
+              <Pressable
+                onPress={() => fetchNextPage()}
+                disabled={isFetchingNextPage}
+                className="w-full py-4 bg-[#EFF6FF] rounded-xl border border-[#CFE2FF] items-center justify-center"
+              >
+                {isFetchingNextPage ? (
+                  <ActivityIndicator size="small" color="#0B5ED7" />
+                ) : (
+                  <Text className="text-[#0B5ED7] font-semibold text-base">
+                    Load More Laws
+                  </Text>
+                )}
+              </Pressable>
+            ) : allLaws.length > 0 ? (
+              <Text className="text-center text-gray-400 py-4 italic">
+                You've reached the end of the list
+              </Text>
+            ) : (
+              <Text className="text-center text-gray-400 py-10">
+                No laws found in this category
+              </Text>
+            )}
+          </View>
+        )}
+      />
     </View>
   );
 }
