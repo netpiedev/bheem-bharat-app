@@ -6,6 +6,8 @@ export interface ApiListResponse<T> {
   status: "success";
   count: number;
   data: T[];
+  page: number;
+  limit: number;
 }
 
 export interface ApiSingleResponse<T> {
