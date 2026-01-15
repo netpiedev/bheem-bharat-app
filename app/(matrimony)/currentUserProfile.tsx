@@ -1,13 +1,11 @@
 import { createProfile, getMyProfile } from "@/app/lib/matrimony.api";
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -193,74 +191,6 @@ function CreateProfileForm() {
   const [profession, setProfession] = useState("");
   const [income, setIncome] = useState("");
   const [aboutMe, setAboutMe] = useState("");
-  const [profileImage, setProfileImage] = useState<string | null>(null);
-
-  const pickImage = async () => {
-    // Request permissions
-    const permissionResult =
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (!permissionResult.granted) {
-      Alert.alert(
-        "Permission Required",
-        "Permission to access the media library is required to upload a profile photo."
-      );
-      return;
-    }
-
-    // Launch image picker
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-
-    if (!result.canceled) {
-      setProfileImage(result.assets[0].uri);
-    }
-  };
-
-  const takePhoto = async () => {
-    // Request camera permissions
-    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-
-    if (!permissionResult.granted) {
-      Alert.alert(
-        "Permission Required",
-        "Permission to access the camera is required to take a photo."
-      );
-      return;
-    }
-
-    // Launch camera
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-
-    if (!result.canceled) {
-      setProfileImage(result.assets[0].uri);
-    }
-  };
-
-  const showImagePickerOptions = () => {
-    Alert.alert("Profile Photo", "Choose an option", [
-      {
-        text: "Take Photo",
-        onPress: takePhoto,
-      },
-      {
-        text: "Choose from Library",
-        onPress: pickImage,
-      },
-      {
-        text: "Cancel",
-        style: "cancel",
-      },
-    ]);
-  };
 
   const createMutation = useMutation({
     mutationFn: createProfile,
@@ -309,7 +239,6 @@ function CreateProfileForm() {
       profession: profession || null,
       income: income || null,
       about_me: aboutMe || null,
-      profile_image: profileImage || null, // Add this if your API supports it
     });
   };
 
@@ -331,29 +260,6 @@ function CreateProfileForm() {
           <Text className="text-gray-600 mb-6">
             Fill in your details to create your matrimony profile
           </Text>
-
-          {/* Profile Photo */}
-          <View className="items-center mb-6">
-            <Pressable
-              onPress={showImagePickerOptions}
-              className="w-32 h-32 rounded-full bg-gray-200 items-center justify-center overflow-hidden border-4 border-white shadow-lg"
-            >
-              {profileImage ? (
-                <Image
-                  source={{ uri: profileImage }}
-                  className="w-full h-full"
-                />
-              ) : (
-                <Ionicons name="person" size={64} color="#9CA3AF" />
-              )}
-              <View className="absolute bottom-0 right-0 bg-blue-600 rounded-full p-2">
-                <Ionicons name="camera" size={20} color="white" />
-              </View>
-            </Pressable>
-            <Text className="text-gray-600 mt-2 text-sm">
-              Tap to {profileImage ? "change" : "add"} photo
-            </Text>
-          </View>
 
           {/* Gender */}
           <Text className="text-gray-900 font-semibold mb-2">Gender *</Text>

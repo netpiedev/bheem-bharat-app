@@ -1,24 +1,16 @@
-import axiosInstance from "./axiosInstance";
 import type {
   ConversationListItem,
   CreateMessageResponse,
   GetMessagesResponse,
   Message,
-} from "@/app/types/matrimony.types";
+} from "@/app/types/chat.types";
+import axiosInstance from "./axiosInstance";
 
-/**
- * Get all conversations
- */
 export const getConversations = async (): Promise<ConversationListItem[]> => {
-  const { data } = await axiosInstance.get<ConversationListItem[]>(
-    "/chat/conversations"
-  );
+  const { data } = await axiosInstance.get("/chat/conversations");
   return data;
 };
 
-/**
- * Get messages for a conversation
- */
 export const getMessages = async (
   conversationId: string
 ): Promise<Message[]> => {
@@ -28,9 +20,6 @@ export const getMessages = async (
   return data.data;
 };
 
-/**
- * Send a message (via HTTP, received via socket)
- */
 export const sendMessage = async (
   conversationId: string,
   message: string
@@ -42,3 +31,12 @@ export const sendMessage = async (
   return data.data;
 };
 
+export const getOrCreateConversation = async (
+  otherUserId: string
+): Promise<string> => {
+  const { data } = await axiosInstance.post<{ status: string; data: { conversation_id: string } }>(
+    "/chat/conversations/get-or-create",
+    { otherUserId }
+  );
+  return data.data.conversation_id;
+};

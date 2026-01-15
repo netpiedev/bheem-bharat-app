@@ -1,11 +1,20 @@
+import { getUserIdFromToken } from "@/app/lib/jwt";
+import {
+  addToWishlist,
+  createProfile,
+  getMyProfile,
+  getProfileById,
+  getWishlist,
+  removeFromWishlist,
+} from "@/app/lib/matrimony.api";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -14,45 +23,39 @@ import {
   TextInput,
   View,
 } from "react-native";
-import {
-  addToWishlist,
-  createProfile,
-  getMyProfile,
-  getProfileById,
-  removeFromWishlist,
-} from "@/app/lib/matrimony.api";
-import { getUserIdFromToken } from "@/app/lib/jwt";
 import { WhiteHeader } from "../components/WhiteHeader";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
+/* =======================================================
+   PROFILE DETAILS SCREEN
+======================================================= */
 export default function ProfileDetailsScreen() {
   const { profileId } = useLocalSearchParams<{ profileId: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [isInWishlist, setIsInWishlist] = useState(false);
 
-  const { data: profile, isLoading, error } = useQuery({
+  const {
+    data: profile,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["matrimony-profile", profileId],
     queryFn: () => getProfileById(profileId!),
     enabled: !!profileId,
     retry: false,
   });
 
-  // Check if current user has a profile (to show create form if needed)
   const { data: myProfile, isLoading: isLoadingMyProfile } = useQuery({
     queryKey: ["matrimony-my-profile"],
     queryFn: getMyProfile,
     retry: false,
   });
 
-  // Check if in wishlist
   useQuery({
     queryKey: ["matrimony-wishlist"],
     queryFn: async () => {
-      const wishlist = await queryClient.fetchQuery({
-        queryKey: ["matrimony-wishlist"],
-      });
-      if (Array.isArray(wishlist)) {
+      const wishlist = await getWishlist();
+      if (Array.isArray(wishlist) && profileId) {
         const found = wishlist.some((item) => item.profile_id === profileId);
         setIsInWishlist(found);
       }
@@ -66,13 +69,7 @@ export default function ProfileDetailsScreen() {
     onSuccess: () => {
       setIsInWishlist(true);
       queryClient.invalidateQueries({ queryKey: ["matrimony-wishlist"] });
-      Alert.alert("Success", "Added to wishlist");
-    },
-    onError: (error: any) => {
-      Alert.alert(
-        "Error",
-        error?.response?.data?.message || "Failed to add to wishlist"
-      );
+      Alert.alert("Added", "Profile added to wishlist");
     },
   });
 
@@ -81,61 +78,43 @@ export default function ProfileDetailsScreen() {
     onSuccess: () => {
       setIsInWishlist(false);
       queryClient.invalidateQueries({ queryKey: ["matrimony-wishlist"] });
-      Alert.alert("Success", "Removed from wishlist");
-    },
-    onError: (error: any) => {
-      Alert.alert(
-        "Error",
-        error?.response?.data?.message || "Failed to remove from wishlist"
-      );
+      Alert.alert("Removed", "Profile removed from wishlist");
     },
   });
 
   const handleStartChat = async () => {
-    try {
-      const token = await AsyncStorage.getItem("token");
-      if (!token || !profile) return;
+    const token = await AsyncStorage.getItem("token");
+    if (!token || !profile) return;
 
-      const currentUserId = getUserIdFromToken(token);
-      if (!currentUserId) {
-        Alert.alert("Error", "Unable to identify user");
-        return;
-      }
-
-      if (profile.user_id === currentUserId) {
-        Alert.alert("Error", "Cannot chat with yourself");
-        return;
-      }
-
-      router.push({
-        pathname: "/(matrimony)/chat" as any,
-        params: { otherUserId: profile.user_id, otherUserName: profile.user.name || "User" },
-      });
-    } catch (error) {
-      Alert.alert("Error", "Failed to start chat");
+    const currentUserId = getUserIdFromToken(token);
+    if (profile.user_id === currentUserId) {
+      Alert.alert("Error", "You cannot chat with yourself");
+      return;
     }
+
+    router.push({
+      pathname: "/(matrimony)/chat" as any,
+      params: {
+        otherUserId: profile.user_id,
+        otherUserName: profile.user.name || "User",
+      },
+    });
   };
 
-  const is404Error = (error as any)?.response?.status === 404;
-  const hasFinishedLoadingMyProfile = !isLoadingMyProfile;
+  const is404 = (error as any)?.response?.status === 404;
 
-  // Show loading while initial profile or my profile is loading
   if (isLoading || (isLoadingMyProfile && !profile)) {
     return (
       <View className="flex-1 bg-white">
         <WhiteHeader title="Profile" />
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#3B82F6" />
+          <ActivityIndicator size="large" color="#2563EB" />
         </View>
       </View>
     );
   }
 
-  // Show create form if:
-  // 1. Profile not found (404 error or no profile data after loading)
-  // 2. User doesn't have their own profile (myProfile is null/undefined after loading)
-  // 3. My profile query has finished loading
-  if ((!profile || is404Error) && hasFinishedLoadingMyProfile && !myProfile) {
+  if ((!profile || is404) && !isLoadingMyProfile && !myProfile) {
     return <CreateProfileForm />;
   }
 
@@ -143,7 +122,7 @@ export default function ProfileDetailsScreen() {
     return (
       <View className="flex-1 bg-white">
         <WhiteHeader title="Profile" />
-        <View className="flex-1 items-center justify-center p-5">
+        <View className="flex-1 items-center justify-center">
           <Text className="text-red-500">Profile not found</Text>
         </View>
       </View>
@@ -155,142 +134,136 @@ export default function ProfileDetailsScreen() {
     : null;
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-gray-50">
       <WhiteHeader title="Profile Details" />
-      <ScrollView className="flex-1" contentContainerStyle={{ padding: 20 }}>
-        {/* Profile Header */}
-        <View className="items-center mb-6">
-          <View className="w-24 h-24 rounded-full bg-gray-200 items-center justify-center mb-4">
-            <Ionicons name="person" size={48} color="#9CA3AF" />
+      <ScrollView contentContainerStyle={{ padding: 20 }}>
+        {/* HERO */}
+        <View className="items-center mb-8">
+          <View className="w-28 h-28 rounded-full bg-blue-50 items-center justify-center mb-4">
+            <Ionicons name="person" size={56} color="#2563EB" />
           </View>
-          <Text className="text-2xl font-bold text-gray-900">
+          <Text className="text-2xl font-bold">
             {profile.user.name || "Anonymous"}
           </Text>
           <Text className="text-gray-600 mt-1">
-            {age ? `${age} years` : "Age not specified"} • {profile.gender}
+            {age ? `${age} yrs` : "Age N/A"} • {profile.gender}
           </Text>
+
           {profile.is_verified && (
-            <View className="flex-row items-center mt-2 bg-green-100 px-3 py-1 rounded-full">
+            <View className="flex-row items-center mt-3 bg-green-50 px-4 py-1.5 rounded-full">
               <Ionicons name="checkmark-circle" size={16} color="#10B981" />
-              <Text className="text-green-700 text-xs ml-1 font-semibold">
-                Verified
+              <Text className="text-green-700 text-xs ml-2 font-semibold">
+                Verified Profile
               </Text>
             </View>
           )}
         </View>
 
-        {/* Action Buttons */}
-        <View className="flex-row mb-6">
+        {/* ACTIONS */}
+        <View className="flex-row mb-8">
           <Pressable
             onPress={handleStartChat}
-            className="flex-1 bg-blue-600 py-3 rounded-lg mr-2 items-center"
+            className="flex-1 bg-blue-600 py-4 rounded-xl mr-2 items-center"
           >
-            <Ionicons name="chatbubble" size={20} color="white" />
-            <Text className="text-white font-semibold mt-1">Message</Text>
+            <Ionicons name="chatbubble-ellipses" size={20} color="white" />
+            <Text className="text-white font-semibold mt-1">Chat</Text>
           </Pressable>
+
           <Pressable
             onPress={() =>
-              isInWishlist
-                ? removeMutation.mutate()
-                : addMutation.mutate()
+              isInWishlist ? removeMutation.mutate() : addMutation.mutate()
             }
-            className={`flex-1 py-3 rounded-lg ml-2 items-center ${
-              isInWishlist ? "bg-red-100" : "bg-gray-100"
+            className={`flex-1 py-4 rounded-xl ml-2 items-center border ${
+              isInWishlist
+                ? "bg-red-50 border-red-200"
+                : "bg-gray-100 border-gray-200"
             }`}
-            disabled={addMutation.isPending || removeMutation.isPending}
           >
             <Ionicons
               name={isInWishlist ? "heart" : "heart-outline"}
               size={20}
-              color={isInWishlist ? "#EF4444" : "#6B7280"}
+              color={isInWishlist ? "#EF4444" : "#2563EB"}
             />
             <Text
               className={`font-semibold mt-1 ${
-                isInWishlist ? "text-red-600" : "text-gray-700"
+                isInWishlist ? "text-red-600" : "text-blue-600"
               }`}
             >
-              {isInWishlist ? "Remove" : "Wishlist"}
+              {isInWishlist ? "Wishlisted" : "Wishlist"}
             </Text>
           </Pressable>
         </View>
 
-        {/* Details */}
-        <View className="bg-gray-50 rounded-2xl p-4 mb-4">
-          <Text className="text-lg font-bold text-gray-900 mb-4">
-            Personal Details
-          </Text>
+        {/* DETAILS */}
+        <InfoCard title="Personal Details">
           {age && (
-            <DetailRow icon="calendar" label="Age" value={`${age} years`} />
-          )}
-          {profile.height && (
-            <DetailRow
-              icon="resize"
-              label="Height"
-              value={`${profile.height} cm`}
-            />
+            <DetailRow icon="calendar-outline" label="Age" value={`${age}`} />
           )}
           {profile.city && (
-            <DetailRow icon="location" label="City" value={profile.city} />
+            <DetailRow
+              icon="location-outline"
+              label="City"
+              value={profile.city}
+            />
           )}
           {profile.religion && (
-            <DetailRow icon="book" label="Religion" value={profile.religion} />
+            <DetailRow
+              icon="book-outline"
+              label="Religion"
+              value={profile.religion}
+            />
           )}
-          {profile.caste && (
-            <DetailRow icon="people" label="Caste" value={profile.caste} />
-          )}
-        </View>
+        </InfoCard>
 
-        <View className="bg-gray-50 rounded-2xl p-4 mb-4">
-          <Text className="text-lg font-bold text-gray-900 mb-4">
-            Professional Details
-          </Text>
+        <InfoCard title="Professional Details">
           {profile.education && (
             <DetailRow
-              icon="school"
+              icon="school-outline"
               label="Education"
               value={profile.education}
             />
           )}
           {profile.profession && (
             <DetailRow
-              icon="briefcase"
+              icon="briefcase-outline"
               label="Profession"
               value={profile.profession}
             />
           )}
           {profile.income && (
-            <DetailRow icon="cash" label="Income" value={profile.income} />
+            <DetailRow
+              icon="cash-outline"
+              label="Income"
+              value={profile.income}
+            />
           )}
-        </View>
+        </InfoCard>
 
         {profile.about_me && (
-          <View className="bg-gray-50 rounded-2xl p-4 mb-4">
-            <Text className="text-lg font-bold text-gray-900 mb-2">
-              About Me
-            </Text>
+          <View className="bg-blue-50 rounded-2xl p-5">
+            <Text className="text-lg font-bold mb-2">About Me</Text>
             <Text className="text-gray-700 leading-6">{profile.about_me}</Text>
           </View>
         )}
-
-        {/* Images Section */}
-        {profile.images && profile.images.length > 0 && (
-          <View className="bg-gray-50 rounded-2xl p-4 mb-4">
-            <Text className="text-lg font-bold text-gray-900 mb-4">Photos</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View className="flex-row gap-3">
-                {profile.images.map((imageKey, index) => (
-                  <Image
-                    key={index}
-                    source={{ uri: imageKey }}
-                    className="w-32 h-32 rounded-xl"
-                    resizeMode="cover"
-                  />
-                ))}
-              </View>
-            </ScrollView>
-          </View>
-        )}
       </ScrollView>
+    </View>
+  );
+}
+
+/* =======================================================
+   SHARED UI COMPONENTS
+======================================================= */
+function InfoCard({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <View className="bg-white rounded-2xl p-5 mb-5 border border-gray-100">
+      <Text className="text-lg font-bold mb-4">{title}</Text>
+      {children}
     </View>
   );
 }
@@ -306,74 +279,34 @@ function DetailRow({
 }) {
   return (
     <View className="flex-row items-center mb-3">
-      <Ionicons name={icon as any} size={20} color="#6B7280" />
-      <Text className="text-gray-600 ml-3 flex-1">{label}:</Text>
-      <Text className="text-gray-900 font-semibold">{value}</Text>
+      <Ionicons name={icon as any} size={18} color="#6B7280" />
+      <Text className="ml-3 flex-1 text-gray-600">{label}</Text>
+      <Text className="font-semibold text-gray-900">{value}</Text>
     </View>
   );
 }
 
+/* =======================================================
+   CREATE PROFILE FORM
+======================================================= */
 function CreateProfileForm() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [gender, setGender] = useState<"MALE" | "FEMALE" | "OTHER">("MALE");
   const [dob, setDob] = useState("");
-  const [height, setHeight] = useState("");
-  const [religion, setReligion] = useState("");
-  const [caste, setCaste] = useState("");
   const [city, setCity] = useState("");
-  const [education, setEducation] = useState("");
   const [profession, setProfession] = useState("");
-  const [income, setIncome] = useState("");
   const [aboutMe, setAboutMe] = useState("");
 
   const createMutation = useMutation({
     mutationFn: createProfile,
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["matrimony-profile"] });
-      queryClient.invalidateQueries({ queryKey: ["matrimony-my-profile"] });
-      queryClient.invalidateQueries({ queryKey: ["matrimony-profiles"] });
-      Alert.alert("Success", "Profile created successfully", [
-        {
-          text: "OK",
-          onPress: () => router.back(),
-        },
+    onSuccess: () => {
+      queryClient.invalidateQueries();
+      Alert.alert("Success", "Profile created", [
+        { text: "OK", onPress: () => router.back() },
       ]);
     },
-    onError: (error: any) => {
-      Alert.alert(
-        "Error",
-        error?.response?.data?.message || "Failed to create profile"
-      );
-    },
   });
-
-  const handleSubmit = () => {
-    if (!dob) {
-      Alert.alert("Error", "Date of birth is required");
-      return;
-    }
-
-    // Validate date format (YYYY-MM-DD)
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!dateRegex.test(dob)) {
-      Alert.alert("Error", "Date of birth must be in YYYY-MM-DD format");
-      return;
-    }
-
-    createMutation.mutate({
-      gender,
-      dob,
-      height: height ? parseInt(height, 10) : null,
-      religion: religion || null,
-      caste: caste || null,
-      city: city || null,
-      education: education || null,
-      profession: profession || null,
-      income: income || null,
-      about_me: aboutMe || null,
-    });
-  };
 
   return (
     <View className="flex-1 bg-white">
@@ -382,151 +315,45 @@ function CreateProfileForm() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
-        <ScrollView
-          className="flex-1"
-          contentContainerStyle={{ padding: 20 }}
-          showsVerticalScrollIndicator={false}
-        >
-          <Text className="text-2xl font-bold text-gray-900 mb-2">
-            Create Matrimony Profile
-          </Text>
-          <Text className="text-gray-600 mb-6">
-            Fill in your details to create your matrimony profile
+        <ScrollView contentContainerStyle={{ padding: 20 }}>
+          <Text className="text-3xl font-bold mb-2">Create Your Profile</Text>
+          <Text className="text-gray-600 mb-8">
+            Help others know you better 💙
           </Text>
 
-          {/* Gender */}
-          <Text className="text-gray-900 font-semibold mb-2">Gender *</Text>
-          <View className="flex-row mb-4">
-            {(["MALE", "FEMALE", "OTHER"] as const).map((g) => (
-              <Pressable
-                key={g}
-                onPress={() => setGender(g)}
-                className={`flex-1 mx-1 py-3 rounded-xl border items-center ${
-                  gender === g
-                    ? "bg-blue-50 border-blue-600"
-                    : "bg-white border-gray-200"
-                }`}
-              >
-                <Text
-                  className={`font-medium ${
-                    gender === g ? "text-blue-600" : "text-gray-500"
-                  }`}
-                >
-                  {g}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-
-          {/* Date of Birth */}
-          <Text className="text-gray-900 font-semibold mb-2">
-            Date of Birth * (YYYY-MM-DD)
-          </Text>
-          <TextInput
+          <Input
+            label="Date of Birth (YYYY-MM-DD)"
             value={dob}
-            onChangeText={setDob}
-            placeholder="2000-01-01"
-            className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4"
-            placeholderTextColor="#9CA3AF"
+            onChange={setDob}
           />
-
-          {/* Height */}
-          <Text className="text-gray-900 font-semibold mb-2">Height (cm)</Text>
-          <TextInput
-            value={height}
-            onChangeText={setHeight}
-            placeholder="170"
-            keyboardType="numeric"
-            className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4"
-            placeholderTextColor="#9CA3AF"
-          />
-
-          {/* Religion */}
-          <Text className="text-gray-900 font-semibold mb-2">Religion</Text>
-          <TextInput
-            value={religion}
-            onChangeText={setReligion}
-            placeholder="Enter your religion"
-            className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4"
-            placeholderTextColor="#9CA3AF"
-          />
-
-          {/* Caste */}
-          <Text className="text-gray-900 font-semibold mb-2">Caste</Text>
-          <TextInput
-            value={caste}
-            onChangeText={setCaste}
-            placeholder="Enter your caste"
-            className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4"
-            placeholderTextColor="#9CA3AF"
-          />
-
-          {/* City */}
-          <Text className="text-gray-900 font-semibold mb-2">City</Text>
-          <TextInput
-            value={city}
-            onChangeText={setCity}
-            placeholder="Enter your city"
-            className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4"
-            placeholderTextColor="#9CA3AF"
-          />
-
-          {/* Education */}
-          <Text className="text-gray-900 font-semibold mb-2">Education</Text>
-          <TextInput
-            value={education}
-            onChangeText={setEducation}
-            placeholder="Enter your education"
-            className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4"
-            placeholderTextColor="#9CA3AF"
-          />
-
-          {/* Profession */}
-          <Text className="text-gray-900 font-semibold mb-2">Profession</Text>
-          <TextInput
+          <Input label="City" value={city} onChange={setCity} />
+          <Input
+            label="Profession"
             value={profession}
-            onChangeText={setProfession}
-            placeholder="Enter your profession"
-            className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4"
-            placeholderTextColor="#9CA3AF"
+            onChange={setProfession}
           />
-
-          {/* Income */}
-          <Text className="text-gray-900 font-semibold mb-2">Income</Text>
-          <TextInput
-            value={income}
-            onChangeText={setIncome}
-            placeholder="Enter your income"
-            className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4"
-            placeholderTextColor="#9CA3AF"
-          />
-
-          {/* About Me */}
-          <Text className="text-gray-900 font-semibold mb-2">About Me</Text>
-          <TextInput
+          <Input
+            label="About Me"
             value={aboutMe}
-            onChangeText={setAboutMe}
-            placeholder="Tell us about yourself"
+            onChange={setAboutMe}
             multiline
-            numberOfLines={4}
-            className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-6"
-            placeholderTextColor="#9CA3AF"
-            textAlignVertical="top"
           />
 
-          {/* Submit Button */}
           <Pressable
-            onPress={handleSubmit}
-            disabled={createMutation.isPending}
-            className="bg-blue-600 py-4 rounded-xl items-center mb-6 disabled:opacity-50"
+            onPress={() =>
+              createMutation.mutate({
+                gender,
+                dob,
+                city,
+                profession,
+                about_me: aboutMe,
+              })
+            }
+            className="bg-blue-600 py-5 rounded-2xl items-center mt-6"
           >
-            {createMutation.isPending ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text className="text-white font-bold text-lg">
-                Create Profile
-              </Text>
-            )}
+            <Text className="text-white font-bold text-lg">
+              Save & Continue
+            </Text>
           </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -534,3 +361,26 @@ function CreateProfileForm() {
   );
 }
 
+function Input({
+  label,
+  value,
+  onChange,
+  multiline,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  multiline?: boolean;
+}) {
+  return (
+    <View className="mb-5">
+      <Text className="font-semibold mb-2">{label}</Text>
+      <TextInput
+        value={value}
+        onChangeText={onChange}
+        multiline={multiline}
+        className="bg-white border border-gray-200 rounded-xl px-4 py-4 shadow-sm"
+      />
+    </View>
+  );
+}

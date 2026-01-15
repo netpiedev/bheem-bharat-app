@@ -1,3 +1,5 @@
+import { getConversations } from "@/app/lib/chat.api";
+import type { ConversationListItem } from "@/app/types/chat.types";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
@@ -9,153 +11,111 @@ import {
   Text,
   View,
 } from "react-native";
-import { getConversations } from "@/app/lib/chat.api";
 import { WhiteHeader } from "../components/WhiteHeader";
-import type { ConversationListItem } from "@/app/types/matrimony.types";
 import { useSocket } from "../lib/socket";
 
 export default function ChatsScreen() {
   const router = useRouter();
   const { isConnected } = useSocket();
 
-  const { data: conversations, isLoading, isError, refetch } = useQuery({
-    queryKey: ["chat-conversations"],
+  const {
+    data = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery<ConversationListItem[]>({
+    queryKey: ["matrimony-conversations"],
     queryFn: getConversations,
-    refetchInterval: 30000,
   });
 
   useEffect(() => {
-    if (isConnected) {
-      refetch();
-    }
-  }, [isConnected, refetch]);
+    if (isConnected) refetch();
+  }, [isConnected]);
 
-  const formatTime = (dateString: string | null) => {
-    if (!dateString) return "";
-    const date = new Date(dateString);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
-
-    if (minutes < 1) return "Just now";
-    if (minutes < 60) return `${minutes}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    if (days < 7) return `${days}d ago`;
-    return date.toLocaleDateString();
-  };
-
-  const renderConversation = ({ item }: { item: ConversationListItem }) => {
-    return (
-      <Pressable
-        onPress={() =>
-          router.push({
-            pathname: "/(matrimony)/chat" as any,
-            params: {
-              conversationId: item.conversation_id,
-              otherUserName: item.user.name || "User",
-            },
-          })
-        }
-        className="bg-white rounded-2xl p-4 mb-3 shadow-sm border border-gray-100"
-      >
-        <View className="flex-row items-center">
-          <View className="w-14 h-14 rounded-full bg-gray-200 items-center justify-center mr-4">
-            <Ionicons name="person" size={28} color="#9CA3AF" />
-          </View>
-          <View className="flex-1">
-            <View className="flex-row items-center justify-between mb-1">
-              <Text className="text-lg font-semibold text-gray-900">
-                {item.user.name || "Anonymous"}
-              </Text>
-              {item.last_message_at && (
-                <Text className="text-xs text-gray-500">
-                  {formatTime(item.last_message_at)}
-                </Text>
-              )}
-            </View>
-            <Text
-              className="text-sm text-gray-600"
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
-              {item.last_message || "No messages yet"}
-            </Text>
-          </View>
-          <Ionicons
-            name="chevron-forward"
-            size={20}
-            color="#9CA3AF"
-            style={{ marginLeft: 8 }}
-          />
-        </View>
-      </Pressable>
-    );
+  const formatTime = (date?: string | null) => {
+    if (!date) return "";
+    const diff = Date.now() - new Date(date).getTime();
+    const m = Math.floor(diff / 60000);
+    const h = Math.floor(diff / 3600000);
+    const d = Math.floor(diff / 86400000);
+    if (m < 1) return "now";
+    if (m < 60) return `${m}m`;
+    if (h < 24) return `${h}h`;
+    return `${d}d`;
   };
 
   if (isLoading) {
     return (
-      <View className="flex-1 bg-gray-50">
+      <View className="flex-1 bg-white">
         <WhiteHeader title="Chats" />
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#3B82F6" />
-        </View>
+        <ActivityIndicator className="mt-10" size="large" />
       </View>
     );
   }
 
   if (isError) {
     return (
-      <View className="flex-1 bg-gray-50">
-        <WhiteHeader title="Chats" />
-        <View className="flex-1 items-center justify-center p-5">
-          <Text className="text-red-500 text-center mb-4">
-            Failed to load conversations
-          </Text>
-          <Pressable
-            onPress={() => refetch()}
-            className="bg-blue-600 px-6 py-3 rounded-lg"
-          >
-            <Text className="text-white font-semibold">Retry</Text>
-          </Pressable>
-        </View>
+      <View className="flex-1 items-center justify-center bg-white">
+        <Text className="text-red-500 mb-3">Failed to load chats</Text>
+        <Pressable
+          onPress={() => refetch()}
+          className="bg-blue-600 px-6 py-3 rounded-xl"
+        >
+          <Text className="text-white">Retry</Text>
+        </Pressable>
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-white">
       <WhiteHeader title="Chats" />
-      <View className="flex-row items-center justify-between px-4 py-2 bg-white border-b border-gray-200">
-        <Text className="text-sm text-gray-600">
-          {conversations?.length || 0} conversations
-        </Text>
-        {!isConnected && (
-          <View className="flex-row items-center">
-            <View className="w-2 h-2 rounded-full bg-red-500 mr-2" />
-            <Text className="text-xs text-red-500">Disconnected</Text>
-          </View>
-        )}
-      </View>
+
       <FlatList
-        data={conversations || []}
-        renderItem={renderConversation}
+        data={data}
         keyExtractor={(item) => item.conversation_id}
-        contentContainerStyle={{ padding: 16 }}
+        renderItem={({ item }) => (
+          <Pressable
+            onPress={() =>
+              router.push({
+                pathname: "/(matrimony)/chat",
+                params: {
+                  conversationId: item.conversation_id,
+                  otherUserName: item.user?.name ?? "User",
+                },
+              })
+            }
+            className="px-4 py-3 border-b border-gray-100"
+          >
+            <View className="flex-row items-center">
+              <View className="w-12 h-12 bg-blue-100 rounded-full items-center justify-center mr-3">
+                <Ionicons name="person" size={22} color="#2563EB" />
+              </View>
+
+              <View className="flex-1">
+                <View className="flex-row justify-between">
+                  <Text className="font-semibold text-gray-900">
+                    {item.user?.name ?? "Anonymous"}
+                  </Text>
+                  <Text className="text-xs text-gray-400">
+                    {formatTime(item.last_message_at)}
+                  </Text>
+                </View>
+
+                <Text className="text-sm text-gray-500" numberOfLines={1}>
+                  {item.last_message ?? "No messages yet"}
+                </Text>
+              </View>
+            </View>
+          </Pressable>
+        )}
         ListEmptyComponent={
-          <View className="items-center justify-center py-20">
-            <Ionicons name="chatbubbles-outline" size={64} color="#9CA3AF" />
-            <Text className="text-gray-500 mt-4 text-center">
-              No conversations yet
-            </Text>
-            <Text className="text-gray-400 text-sm mt-2 text-center">
-              Start a conversation from a profile
-            </Text>
+          <View className="items-center mt-24">
+            <Ionicons name="chatbubbles-outline" size={64} color="#CBD5E1" />
+            <Text className="text-gray-500 mt-4">No chats yet</Text>
           </View>
         }
       />
     </View>
   );
 }
-

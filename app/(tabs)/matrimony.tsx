@@ -1,215 +1,273 @@
-import React from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  Image,
-  TouchableOpacity,
-  ScrollView,
-  ActivityIndicator,
-} from "react-native";
-import { getProfiles, getMyProfile } from "@/app/lib/matrimony.api";
+import { getMyProfile, getProfiles } from "@/app/lib/matrimony.api";
+import type { MatrimonyProfileWithUser } from "@/app/types/matrimony.types";
+import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "expo-router";
+import React, { useState } from "react";
+import {
+  ActivityIndicator,
+  Image,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
-// Updated ProfileCardProps to align with API data (age as number, optional keys)
-type ProfileCardProps = {
-  name: string;
-  age?: number;
-  job?: string | null;
-  city?: string | null;
-  image?: string | null;
-  grayscale?: boolean;
+/* ------------------ AVATARS ------------------ */
+const FEMALE_AVATAR =
+  "https://static.vecteezy.com/system/resources/previews/042/332/066/non_2x/person-photo-placeholder-woman-default-avatar-profile-icon-grey-photo-placeholder-female-no-photo-images-for-unfilled-user-profile-greyscale-illustration-for-social-media-free-vector.jpg";
+
+const MALE_AVATAR =
+  "https://static.vecteezy.com/system/resources/previews/036/594/092/non_2x/man-empty-avatar-photo-placeholder-for-social-networks-resumes-forums-and-dating-sites-male-and-female-no-photo-images-for-unfilled-user-profile-free-vector.jpg";
+
+/* ------------------ HELPERS ------------------ */
+const calculateAge = (dob?: string) => {
+  if (!dob) return undefined;
+  const birth = new Date(dob);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age;
 };
 
-type StatCardProps = {
-  title: string;
-  subtitle: string;
+const getProfileImage = (profile: MatrimonyProfileWithUser) => {
+  if (profile.user?.photo) return profile.user.photo;
+  return profile.gender === "FEMALE" ? FEMALE_AVATAR : MALE_AVATAR;
 };
 
-export default function Matrimony() {
-  // Fetch profiles from API
-  const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["matrimony-profiles"],
-    queryFn: () => getProfiles({ limit: 10 }), // display 10 max for overview
+/* ------------------ SCREEN ------------------ */
+export default function MatrimonyTab() {
+  const router = useRouter();
+  const [gender, setGender] = useState<"MALE" | "FEMALE">("MALE");
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["matrimony-featured", gender],
+    queryFn: () => getProfiles({ gender, limit: 10 }),
   });
 
-  // Fetch current user's matrimony profile
-  const {
-    data: myProfile,
-    isLoading: isLoadingMyProfile,
-    error: myProfileError,
-  } = useQuery({
+  const { data: myProfile } = useQuery({
     queryKey: ["matrimony-my-profile"],
     queryFn: getMyProfile,
     retry: false,
   });
 
   return (
-    <ScrollView className="flex-1 bg-white">
-      {/* Header */}
+    <ScrollView
+      className="flex-1 bg-white"
+      showsVerticalScrollIndicator={false}
+    >
+      {/* HEADER */}
       <View className="bg-blue-600 px-5 pt-12 pb-8 rounded-b-3xl">
-        <Text className="text-white text-xl font-bold mb-4">
+        <Text className="text-white text-2xl font-bold mb-2">
           Find Your Life Partner
         </Text>
-        <View className="flex-row items-center bg-white rounded-full px-4 py-3">
-          <TextInput
-            placeholder="Search by name, city, profession"
-            className="flex-1 text-gray-600"
-          />
-          <Text className="text-blue-600 text-lg">⚙️</Text>
-        </View>
-      </View>
+        <Text className="text-blue-100 mb-4">
+          Verified profiles • Trusted matches
+        </Text>
 
-      {/* Groom / Bride Tabs */}
-      <View className="mx-5 mt-5 bg-blue-50 rounded-xl flex-row">
-        <TouchableOpacity className="flex-1 bg-blue-600 py-3 rounded-xl items-center">
-          <Text className="text-white font-semibold">👤 Groom</Text>
-        </TouchableOpacity>
-        <TouchableOpacity className="flex-1 py-3 items-center">
-          <Text className="text-gray-500 font-semibold">🤍 Bride</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Featured Profiles */}
-      <View className="mx-5 mt-6">
-        <View className="flex-row justify-between items-center mb-3">
-          <Text className="font-bold text-lg">⭐ Featured Profiles</Text>
-          <Text className="text-blue-600">View All</Text>
-        </View>
-        {isLoading ? (
-          <View className="h-72 flex-1 items-center justify-center">
-            <ActivityIndicator size="large" color="#3B82F6" />
-          </View>
-        ) : isError ? (
-          <View className="h-40 items-center justify-center">
-            <Text className="text-red-500">Failed to load profiles</Text>
-          </View>
-        ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {(data?.data?.slice(0, 5) || []).map((profile: any, i: number) => {
-              // age calculation
-              let age: number | undefined;
-              if (profile.dob) {
-                const dob = new Date(profile.dob);
-                const now = new Date();
-                age = now.getFullYear() - dob.getFullYear();
-                const m = now.getMonth() - dob.getMonth();
-                if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) {
-                  age--;
-                }
-              }
-              const userImg =
-                profile.user?.avatar ??
-                `https://i.pravatar.cc/300?img=${11 + i}`;
-              return (
-                <ProfileCard
-                  key={profile.id || i}
-                  name={
-                    profile.user?.name ||
-                    profile.user?.fullName ||
-                    profile.user?.displayName ||
-                    "Anonymous"
-                  }
-                  age={age}
-                  job={profile.profession || null}
-                  city={profile.city || profile.region || ""}
-                  image={userImg}
-                  grayscale={i % 2 === 1}
-                />
-              );
-            })}
-            {/* Show at least 1 fallback if no API data */}
-            {(!data?.data || data.data.length === 0) && (
-              <ProfileCard
-                name="Rahul Ambedkar"
-                age={28}
-                job="Business Analyst"
-                city="Pune"
-                image="https://i.pravatar.cc/300?img=12"
-                grayscale={false}
-              />
-            )}
-          </ScrollView>
-        )}
-      </View>
-
-      {/* Browse All */}
-      <View className="mx-5 mt-6 bg-blue-50 rounded-xl p-4 flex-row items-center justify-between">
-        <View>
-          <Text className="font-semibold">Browse All Profiles</Text>
-          <Text className="text-gray-500">
-            {data?.total || "5,000+"} verified profiles
+        <TouchableOpacity
+          onPress={() => router.push("/(matrimony)/browse")}
+          className="flex-row items-center bg-white rounded-full px-4 py-3"
+        >
+          <Ionicons name="search" size={18} color="#2563EB" />
+          <Text className="ml-3 text-gray-500 flex-1">
+            Search by name, city, profession
           </Text>
-        </View>
-        <Text className="text-blue-600 text-xl">➡️</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Create Profile */}
-      {!myProfile && !isLoadingMyProfile && (
-        <View className="mx-5 mt-6 bg-blue-600 rounded-xl p-5">
-          <Text className="text-white text-lg font-bold mb-2">
+      {/* GENDER FILTER */}
+      <View className="mx-5 mt-5 bg-blue-50 rounded-2xl flex-row p-1">
+        {(["MALE", "FEMALE"] as const).map((g) => (
+          <TouchableOpacity
+            key={g}
+            onPress={() => setGender(g)}
+            className={`flex-1 py-3 rounded-xl items-center ${
+              gender === g ? "bg-blue-600" : ""
+            }`}
+          >
+            <Text
+              className={`font-semibold ${
+                gender === g ? "text-white" : "text-gray-500"
+              }`}
+            >
+              {g === "MALE" ? "Groom" : "Bride"}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* ================= FEATURED ================= */}
+      <SectionHeader
+        title="Featured Profiles"
+        onPress={() => router.push("/(matrimony)/browse")}
+      />
+
+      {isLoading ? (
+        <ActivityIndicator className="mt-10" size="large" color="#2563EB" />
+      ) : isError ? (
+        <Text className="text-red-500 mx-5">Failed to load profiles</Text>
+      ) : (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          className="pl-5"
+        >
+          {data?.data?.slice(0, 5).map((profile) => (
+            <ProfileCard
+              key={profile.id}
+              profile={profile}
+              onPress={() =>
+                router.push({
+                  pathname: "/(matrimony)/profile",
+                  params: { profileId: profile.id },
+                })
+              }
+            />
+          ))}
+        </ScrollView>
+      )}
+
+      {/* ================= QUICK ACTIONS ================= */}
+      <View className="mx-5 mt-6 flex-row justify-between">
+        <QuickCard
+          icon="people-outline"
+          title="Browse"
+          onPress={() => router.push("/(matrimony)/browse")}
+        />
+        <QuickCard
+          icon="heart-outline"
+          title="Wishlist"
+          onPress={() => router.push("/(matrimony)/wishlist")}
+        />
+        <QuickCard
+          icon="chatbubble-outline"
+          title="Chats"
+          onPress={() => router.push("/(matrimony)/chats")}
+        />
+      </View>
+
+      {/* ================= RECOMMENDED ================= */}
+      {!isLoading && !isError && (data?.data?.length ?? 0) > 5 && (
+        <>
+          <SectionHeader
+            title="Recommended For You"
+            onPress={() => router.push("/(matrimony)/browse")}
+          />
+
+          <View className="mx-5">
+            {data?.data?.slice(5, 10).map((profile) => (
+              <TouchableOpacity
+                key={profile.id}
+                onPress={() =>
+                  router.push({
+                    pathname: "/(matrimony)/profile",
+                    params: { profileId: profile.id },
+                  })
+                }
+                className="flex-row items-center bg-white border border-gray-100 rounded-xl p-4 mb-3"
+              >
+                <Image
+                  source={{ uri: getProfileImage(profile) }}
+                  className="w-12 h-12 rounded-full mr-4"
+                />
+
+                <View className="flex-1">
+                  <Text className="font-semibold text-gray-900">
+                    {profile.user?.name || "Anonymous"}
+                  </Text>
+                  <Text className="text-sm text-gray-500">
+                    {calculateAge(profile.dob)} yrs •{" "}
+                    {profile.city || "City not specified"}
+                  </Text>
+                </View>
+
+                <Ionicons name="chevron-forward" size={20} color="#CBD5E1" />
+              </TouchableOpacity>
+            ))}
+          </View>
+        </>
+      )}
+
+      {/* ================= CREATE PROFILE ================= */}
+      {!myProfile && (
+        <View className="mx-5 mt-8 bg-blue-600 rounded-2xl p-6">
+          <Text className="text-white text-xl font-bold mb-1">
             Create Your Profile
           </Text>
           <Text className="text-blue-100 mb-4">
-            Join thousands of verified profiles
+            Start connecting with verified profiles today
           </Text>
-          <TouchableOpacity className="bg-white py-3 rounded-full items-center">
-            <Text className="text-blue-600 font-semibold">Get Started</Text>
+
+          <TouchableOpacity
+            onPress={() => router.push("/(matrimony)/profile")}
+            className="bg-white py-3 rounded-xl items-center"
+          >
+            <Text className="text-blue-600 font-semibold text-base">
+              Get Started
+            </Text>
           </TouchableOpacity>
         </View>
       )}
-
-      {/* Stats */}
-      <View className="mx-5 my-6 flex-row justify-between">
-        <StatCard
-          title={`${data?.total || "500+"}`}
-          subtitle="Success Stories"
-        />
-        <StatCard
-          title={`${data?.total || "100%"}`}
-          subtitle="Verified Profiles"
-        />
-      </View>
     </ScrollView>
   );
 }
 
-/* Components */
-function ProfileCard({
-  name,
-  age,
-  job,
-  city,
-  image,
-  grayscale,
-}: ProfileCardProps) {
+/* ---------------- COMPONENTS ---------------- */
+
+function SectionHeader({ title, onPress }: any) {
   return (
-    <View className="w-60 mr-4 bg-black rounded-2xl overflow-hidden">
-      <Image
-        source={{ uri: image || "https://i.pravatar.cc/300" }}
-        className="w-full h-72"
-        style={{ opacity: grayscale ? 0.7 : 1 }}
-      />
-      <View className="absolute bottom-0 w-full p-4 bg-black/60">
-        <Text className="text-white font-bold text-lg">
-          {name}
-          {age !== undefined ? `, ${age}` : ""}
-        </Text>
-        <Text className="text-gray-200">{job}</Text>
-        <Text className="text-gray-300">📍 {city}</Text>
-        <TouchableOpacity className="bg-white mt-3 py-2 rounded-full items-center">
-          <Text className="font-semibold">View Profile</Text>
-        </TouchableOpacity>
-      </View>
+    <View className="mx-5 mt-8 mb-3 flex-row justify-between items-center">
+      <Text className="text-lg font-bold text-gray-900">{title}</Text>
+      <TouchableOpacity onPress={onPress}>
+        <Text className="text-blue-600 font-medium">View All</Text>
+      </TouchableOpacity>
     </View>
   );
 }
 
-function StatCard({ title, subtitle }: StatCardProps) {
+function ProfileCard({ profile, onPress }: any) {
+  const age = calculateAge(profile.dob);
+
   return (
-    <View className="w-[48%] border border-blue-100 rounded-xl p-4 items-center">
-      <Text className="text-blue-600 text-lg font-bold">{title}</Text>
-      <Text className="text-gray-500">{subtitle}</Text>
-    </View>
+    <TouchableOpacity
+      onPress={onPress}
+      className="w-64 mr-4 rounded-2xl overflow-hidden bg-black"
+    >
+      <Image
+        source={{ uri: getProfileImage(profile) }}
+        className="w-full h-72"
+      />
+
+      <View className="absolute bottom-0 w-full p-4 bg-black/60">
+        <Text className="text-white font-bold text-lg">
+          {profile.user?.name || "Anonymous"}
+          {age ? `, ${age}` : ""}
+        </Text>
+        <Text className="text-gray-200 text-sm">
+          {profile.profession || "Profession not specified"}
+        </Text>
+        <Text className="text-gray-300 text-sm">
+          {profile.city || "City not specified"}
+        </Text>
+
+        <View className="mt-3 bg-white py-2 rounded-xl items-center">
+          <Text className="font-semibold text-gray-900">View Profile</Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+function QuickCard({ icon, title, onPress }: any) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      className="w-[30%] bg-blue-50 rounded-xl py-5 items-center"
+    >
+      <Ionicons name={icon} size={22} color="#2563EB" />
+      <Text className="mt-2 font-semibold text-gray-700">{title}</Text>
+    </TouchableOpacity>
   );
 }

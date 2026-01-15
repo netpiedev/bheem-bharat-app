@@ -89,4 +89,3 @@ export interface CreateMessageResponse {
   status: string;
   data: Message;
 }
-

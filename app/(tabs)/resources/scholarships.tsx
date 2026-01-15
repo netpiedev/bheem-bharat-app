@@ -98,7 +98,7 @@ export default function Scholarships() {
               key={item.id}
               onPress={() =>
                 router.push({
-                  pathname: "/(scholershipsscreens)/detailedScholarshipPage",
+                  pathname: "/(scholarshipsscreens)/detailedScholarshipPage",
                   params: { id: item.id },
                 })
               }
