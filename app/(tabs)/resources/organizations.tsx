@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 
+import { ResourcesHeader } from "@/app/components/ResourcesHeader";
 import { fetchOrganizations } from "@/app/lib/organizations.api";
 
 export default function Organizations() {
@@ -76,6 +77,7 @@ export default function Organizations() {
 
   return (
     <View className="flex-1 bg-white">
+      <ResourcesHeader title="Organizations" />
       <ScrollView
         contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
         showsVerticalScrollIndicator={false}

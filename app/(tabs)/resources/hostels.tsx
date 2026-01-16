@@ -16,6 +16,7 @@ import {
   View,
 } from "react-native";
 
+import { ResourcesHeader } from "@/app/components/ResourcesHeader";
 import { fetchHostels } from "@/app/lib/hostels.api";
 
 const { width } = Dimensions.get("window");
@@ -137,6 +138,7 @@ export default function Hostels() {
 
   return (
     <View className="flex-1 bg-gray-50">
+      <ResourcesHeader title="Hostels" />
       <ScrollView
         contentContainerStyle={{ paddingBottom: 32 }}
         showsVerticalScrollIndicator={false}

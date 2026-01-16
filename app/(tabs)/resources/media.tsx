@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { ResourcesHeader } from "@/app/components/ResourcesHeader";
 import { fetchMedia } from "@/app/lib/media.api";
 
 type FileType = "image" | "video" | "audio" | "all";
@@ -207,6 +208,7 @@ export default function MediaScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
+      <ResourcesHeader title="Media" />
       {/* Filter Buttons */}
       <View className="px-4 py-3 bg-white border-b border-gray-100">
         <ScrollView

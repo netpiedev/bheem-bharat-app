@@ -1,3 +1,4 @@
+import { ResourcesHeader } from "@/app/components/ResourcesHeader";
 import {
   fetchScholarships,
   fetchScholarshipStates,
@@ -74,6 +75,7 @@ export default function Scholarships() {
 
   return (
     <View className="flex-1 bg-white">
+      <ResourcesHeader title="Scholarships" />
       <ScrollView
         contentContainerStyle={{ padding: 16, paddingBottom: 140 }}
         showsVerticalScrollIndicator={false}

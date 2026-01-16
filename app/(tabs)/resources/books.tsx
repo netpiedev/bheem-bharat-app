@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 
+import { ResourcesHeader } from "@/app/components/ResourcesHeader";
 import { fetchBookCategories } from "@/app/lib/books.api";
 import { BookCategoryListItem } from "@/app/types/books.types";
 
@@ -51,6 +52,7 @@ export default function Books() {
 
   return (
     <View className="flex-1 bg-[#FAFCFF]">
+      <ResourcesHeader title="Books categories" />
       <ScrollView
         contentContainerStyle={{
           paddingHorizontal: 20,

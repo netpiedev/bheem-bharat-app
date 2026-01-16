@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 
+import { ResourcesHeader } from "@/app/components/ResourcesHeader";
 import { fetchArticleCategories, fetchArticles } from "@/app/lib/articles.api";
 
 export default function Articles() {
@@ -54,6 +55,7 @@ export default function Articles() {
 
   return (
     <View className="flex-1 bg-white">
+      <ResourcesHeader title="Articles" />
       <ScrollView
         contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
         refreshControl={
