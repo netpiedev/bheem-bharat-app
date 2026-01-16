@@ -1,3 +1,4 @@
+import { ResourcesHeader } from "@/app/components/ResourcesHeader";
 import { fetchLawCategories, fetchLaws } from "@/app/lib/laws.api";
 import { Ionicons } from "@expo/vector-icons";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
@@ -67,6 +68,7 @@ export default function Legal() {
 
   return (
     <View className="flex-1 bg-white">
+      <ResourcesHeader title="Laws" />
       {/* Category Horizontal Selector */}
       <View className="py-4 border-b border-gray-50">
         <FlatList

@@ -1,25 +1,36 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   View,
 } from "react-native";
 
+import { ResourcesHeader } from "@/app/components/ResourcesHeader";
 import { fetchBookCategories } from "@/app/lib/books.api";
 import { BookCategoryListItem } from "@/app/types/books.types";
 
 export default function Books() {
   const router = useRouter();
-  const { data, isLoading, error } = useQuery({
+  const [refreshing, setRefreshing] = useState(false);
+
+  const { data, isLoading, refetch, error } = useQuery({
     queryKey: ["bookCategories"],
     queryFn: fetchBookCategories,
   });
 
   const bookCategories: BookCategoryListItem[] = data?.data || [];
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  }, [refetch]);
 
   if (isLoading)
     return (
@@ -41,6 +52,7 @@ export default function Books() {
 
   return (
     <View className="flex-1 bg-[#FAFCFF]">
+      <ResourcesHeader title="Books categories" />
       <ScrollView
         contentContainerStyle={{
           paddingHorizontal: 20,
@@ -48,6 +60,14 @@ export default function Books() {
           paddingBottom: 40,
         }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#1976d2"]} // Android color
+            tintColor="#1976d2" // iOS color
+          />
+        }
       >
         {bookCategories.map((item) => (
           <Pressable

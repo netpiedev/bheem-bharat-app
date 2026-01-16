@@ -1,11 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import React, { useMemo } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Image,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   View,
@@ -15,6 +16,8 @@ import { fetchBooksByCategory } from "@/app/lib/books.api";
 
 export default function BooksByCategory() {
   const router = useRouter();
+  const [refreshing, setRefreshing] = useState(false);
+
   const { id, category } = useLocalSearchParams<{
     id: string;
     category: string;
@@ -27,6 +30,7 @@ export default function BooksByCategory() {
     hasNextPage,
     isFetchingNextPage,
     isLoading,
+    refetch,
     error,
   } = useInfiniteQuery({
     queryKey: ["books-infinite", id],
@@ -48,6 +52,12 @@ export default function BooksByCategory() {
   const books = useMemo(() => {
     return data?.pages.flatMap((page) => page?.data ?? []) ?? [];
   }, [data]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  }, [refetch]);
 
   if (isLoading)
     return (
@@ -78,6 +88,14 @@ export default function BooksByCategory() {
           paddingBottom: 16,
         }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#1976d2"]} // Android color
+            tintColor="#1976d2" // iOS color
+          />
+        }
       >
         {books.map((item) => (
           <Pressable

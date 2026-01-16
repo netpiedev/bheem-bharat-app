@@ -1,18 +1,20 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
   Image,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { ResourcesHeader } from "@/app/components/ResourcesHeader";
 import { fetchMedia } from "@/app/lib/media.api";
 
 type FileType = "image" | "video" | "audio" | "all";
@@ -27,25 +29,38 @@ const ITEM_WIDTH =
 export default function MediaScreen() {
   const router = useRouter();
   const [selectedType, setSelectedType] = useState<FileType>("image");
+  const [refreshing, setRefreshing] = useState(false);
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
-    useInfiniteQuery({
-      queryKey: ["medialist", selectedType],
-      queryFn: ({ pageParam = 1 }) =>
-        fetchMedia({
-          pageParam: pageParam as number,
-          fileType: selectedType,
-        }),
-      initialPageParam: 1,
-      getNextPageParam: (lastPage) => {
-        const fetchedSoFar = lastPage.page * lastPage.limit;
-        return lastPage.count > fetchedSoFar ? lastPage.page + 1 : undefined;
-      },
-    });
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    refetch,
+  } = useInfiniteQuery({
+    queryKey: ["medialist", selectedType],
+    queryFn: ({ pageParam = 1 }) =>
+      fetchMedia({
+        pageParam: pageParam as number,
+        fileType: selectedType,
+      }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      const fetchedSoFar = lastPage.page * lastPage.limit;
+      return lastPage.count > fetchedSoFar ? lastPage.page + 1 : undefined;
+    },
+  });
 
   const mediaList = useMemo(() => {
     return data?.pages.flatMap((page) => page.data) ?? [];
   }, [data]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  }, [refetch]);
 
   // Split items into two columns for masonry layout
   const columns = useMemo(() => {
@@ -193,6 +208,7 @@ export default function MediaScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50" edges={["bottom"]}>
+      <ResourcesHeader title="Media" />
       {/* Filter Buttons */}
       <View className="px-4 py-3 bg-white border-b border-gray-100">
         <ScrollView
@@ -214,6 +230,14 @@ export default function MediaScreen() {
           paddingTop: 16,
           paddingBottom: 16,
         }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#1976d2"]} // Android color
+            tintColor="#1976d2" // iOS color
+          />
+        }
       >
         {mediaList.length === 0 ? (
           <View className="flex-1 items-center justify-center py-20">

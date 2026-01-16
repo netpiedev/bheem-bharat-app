@@ -1,21 +1,24 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   TextInput,
   View,
 } from "react-native";
 
+import { ResourcesHeader } from "@/app/components/ResourcesHeader";
 import { fetchOrganizations } from "@/app/lib/organizations.api";
 
 export default function Organizations() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
   const [selectedState, setSelectedState] = useState<string | undefined>(
     undefined
   );
@@ -26,6 +29,7 @@ export default function Organizations() {
     hasNextPage,
     isFetchingNextPage,
     isLoading,
+    refetch,
     error,
   } = useInfiniteQuery({
     queryKey: ["organizations", selectedState],
@@ -41,6 +45,12 @@ export default function Organizations() {
       return lastPage.count > fetchedSoFar ? lastPage.page + 1 : undefined;
     },
   });
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  }, [refetch]);
 
   const organizations = useMemo(() => {
     return data?.pages.flatMap((page) => page.data) ?? [];
@@ -67,10 +77,19 @@ export default function Organizations() {
 
   return (
     <View className="flex-1 bg-white">
+      <ResourcesHeader title="Organizations" />
       <ScrollView
         contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#1976d2"]} // Android color
+            tintColor="#1976d2" // iOS color
+          />
+        }
       >
         <View className="mb-6 bg-white border border-gray-200 rounded-xl flex-row items-center px-4 py-1 shadow-sm">
           <Ionicons name="search" size={18} color="#9CA3AF" />

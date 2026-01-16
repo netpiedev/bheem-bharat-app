@@ -39,8 +39,8 @@ export default {
   profile_notifications: "Notifications",
   profile_notifications_sub: "Manage notification preferences",
 
-  profile_privacy: "Privacy & Security",
-  profile_privacy_sub: "Control your privacy settings",
+  profile_privacy: "Privacy Policy",
+  profile_privacy_sub: "Manage your data and visibility preferences",
 
   profile_language: "Language",
 

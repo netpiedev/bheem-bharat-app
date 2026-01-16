@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -9,12 +9,14 @@ import {
   Image,
   Modal,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 
+import { ResourcesHeader } from "@/app/components/ResourcesHeader";
 import { fetchHostels } from "@/app/lib/hostels.api";
 
 const { width } = Dimensions.get("window");
@@ -23,6 +25,7 @@ const CARD_WIDTH = width - 32; // Full width minus padding
 export default function Hostels() {
   const router = useRouter();
 
+  const [refreshing, setRefreshing] = useState(false);
   const [selectedState, setSelectedState] = useState<string | null>(null);
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [activeModal, setActiveModal] = useState<"state" | "city" | null>(null);
@@ -33,6 +36,7 @@ export default function Hostels() {
     hasNextPage,
     isFetchingNextPage,
     isLoading,
+    refetch,
     error,
   } = useInfiniteQuery({
     queryKey: ["hostels", selectedState, selectedCity],
@@ -93,6 +97,12 @@ export default function Hostels() {
     }
   };
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  }, [refetch]);
+
   const handleSelect = (option: string) => {
     if (activeModal === "state") {
       setSelectedState(option);
@@ -128,10 +138,19 @@ export default function Hostels() {
 
   return (
     <View className="flex-1 bg-gray-50">
+      <ResourcesHeader title="Hostels" />
       <ScrollView
         contentContainerStyle={{ paddingBottom: 32 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#1976d2"]} // Android color
+            tintColor="#1976d2" // iOS color
+          />
+        }
       >
         {/* Filter Section with gradient background */}
         <View className="bg-white px-4 pt-4 pb-6 border-b border-gray-100">
@@ -365,7 +384,7 @@ export default function Hostels() {
 
         {/* Help Card */}
         <View className="px-4 mt-4">
-          <Pressable className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-3xl p-6 flex-row items-center shadow-lg active:opacity-90">
+          <Pressable className="bg-blue-500 rounded-3xl p-6 flex-row items-center shadow-lg active:opacity-90">
             <View className="bg-white/20 backdrop-blur-sm p-4 rounded-2xl mr-4">
               <Ionicons name="help-circle" size={32} color="white" />
             </View>

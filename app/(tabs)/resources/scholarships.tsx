@@ -1,3 +1,4 @@
+import { ResourcesHeader } from "@/app/components/ResourcesHeader";
 import {
   fetchScholarships,
   fetchScholarshipStates,
@@ -5,10 +6,12 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Modal,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   View,
@@ -17,6 +20,7 @@ import {
 export default function Scholarships() {
   const router = useRouter();
   const [showFilters, setShowFilters] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [selectedState, setSelectedState] = useState<string | null>(null);
   const LIMIT = 10;
 
@@ -53,6 +57,12 @@ export default function Scholarships() {
 
   /* ---------------- ACTIONS ---------------- */
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  }, [refetch]);
+
   const applyFilter = () => {
     refetch();
     setShowFilters(false);
@@ -66,20 +76,53 @@ export default function Scholarships() {
 
   return (
     <View className="flex-1 bg-white">
+      <ResourcesHeader title="Scholarships" />
       <ScrollView
         contentContainerStyle={{ padding: 16, paddingBottom: 140 }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#1976d2"]} // Android color
+            tintColor="#1976d2" // iOS color
+          />
+        }
       >
         {/* FILTER BUTTON */}
-        <Pressable
-          onPress={() => setShowFilters(true)}
-          className="self-start flex-row items-center bg-[#0B5ED7] px-4 py-2 rounded-full mb-4"
-        >
-          <Ionicons name="filter" size={14} color="white" />
-          <Text className="text-white ml-2 text-sm">
-            {selectedState ? selectedState : "Filters"}
-          </Text>
-        </Pressable>
+        <View className="flex-row items-center justify-between mb-6">
+          <View>
+            <Text className="text-gray-500 text-xs uppercase tracking-widest font-bold">
+              Available Schemes
+            </Text>
+            <Text className="text-xl font-bold text-gray-900">
+              Education & Aid
+            </Text>
+          </View>
+
+          <Pressable
+            onPress={() => setShowFilters(true)}
+            style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
+            className={`flex-row items-center px-4 py-2.5 rounded-2xl border ${
+              selectedState
+                ? "bg-blue-50 border-blue-200"
+                : "bg-white border-gray-200 shadow-sm"
+            }`}
+          >
+            <Ionicons
+              name={selectedState ? "funnel" : "filter-outline"}
+              size={16}
+              color={selectedState ? "#0B5ED7" : "#64748B"}
+            />
+            <Text
+              className={`ml-2 font-semibold ${
+                selectedState ? "text-[#0B5ED7]" : "text-gray-600"
+              }`}
+            >
+              {selectedState ? selectedState : "Select State"}
+            </Text>
+          </Pressable>
+        </View>
 
         {/* LOADING STATE */}
         {isLoading && <ActivityIndicator size="large" color="#0B5ED7" />}
@@ -137,57 +180,77 @@ export default function Scholarships() {
       </ScrollView>
 
       {/* FILTER PANEL (BOTTOM SHEET) */}
-      {showFilters && (
-        <View className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl border-t border-gray-200 p-5 shadow-xl">
-          <View className="flex-row items-center justify-between mb-4">
-            <Text className="text-lg font-semibold">Select State</Text>
-            <Pressable onPress={() => setShowFilters(false)}>
-              <Ionicons name="close" size={22} color="gray" />
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showFilters}
+        onRequestClose={() => setShowFilters(false)}
+      >
+        <Pressable
+          className="flex-1 bg-black/40"
+          onPress={() => setShowFilters(false)}
+        />
+        <View className="bg-white rounded-t-[40px] p-6 pb-10 shadow-2xl">
+          <View className="w-12 h-1.5 bg-gray-200 rounded-full self-center mb-6" />
+
+          <View className="flex-row items-center justify-between mb-6">
+            <Text className="text-2xl font-bold text-gray-900">
+              Filter by State
+            </Text>
+            <Pressable
+              onPress={() => setShowFilters(false)}
+              className="bg-gray-100 p-2 rounded-full"
+            >
+              <Ionicons name="close" size={20} color="#64748B" />
             </Pressable>
           </View>
 
-          <ScrollView style={{ maxHeight: 300 }}>
-            {states.map((state) => (
-              <Pressable
-                key={state.id}
-                onPress={() => setSelectedState(state.name)}
-                className={`px-4 py-3 rounded-xl mb-2 border ${
-                  selectedState === state.name
-                    ? "border-[#0B5ED7] bg-blue-50"
-                    : "border-gray-300"
-                }`}
-              >
-                <Text
-                  className={`${
+          <ScrollView
+            style={{ maxHeight: 350 }}
+            showsVerticalScrollIndicator={false}
+          >
+            <View className="flex-row flex-wrap gap-2">
+              {states.map((state) => (
+                <Pressable
+                  key={state.id}
+                  onPress={() => setSelectedState(state.name)}
+                  className={`px-5 py-3 rounded-2xl border ${
                     selectedState === state.name
-                      ? "text-[#0B5ED7] font-semibold"
-                      : "text-gray-800"
+                      ? "border-[#0B5ED7] bg-blue-600"
+                      : "border-gray-200 bg-white"
                   }`}
                 >
-                  {state.name}
-                </Text>
-              </Pressable>
-            ))}
+                  <Text
+                    className={`font-medium ${
+                      selectedState === state.name
+                        ? "text-white"
+                        : "text-gray-600"
+                    }`}
+                  >
+                    {state.name}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
           </ScrollView>
 
-          {/* ACTIONS */}
-          <View className="flex-row mt-5 gap-3">
+          <View className="flex-row mt-8 gap-4">
             <Pressable
               onPress={handleReset}
-              className="flex-1 py-3 rounded-xl border border-gray-400 items-center"
+              className="flex-1 py-4 rounded-2xl bg-gray-100 items-center"
             >
-              <Text className="text-gray-600">Reset</Text>
+              <Text className="text-gray-600 font-bold">Reset</Text>
             </Pressable>
 
             <Pressable
               onPress={applyFilter}
-              className="flex-1 py-3 rounded-xl bg-[#0B5ED7] items-center"
+              className="flex-3 py-4 rounded-2xl bg-[#0B5ED7] items-center flex-[2]"
             >
-              <Text className="text-white">Apply</Text>
+              <Text className="text-white font-bold text-lg">Apply Filter</Text>
             </Pressable>
           </View>
         </View>
-      )}
+      </Modal>
     </View>
   );
 }
