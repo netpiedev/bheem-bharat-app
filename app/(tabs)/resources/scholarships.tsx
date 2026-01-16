@@ -5,10 +5,11 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   View,
@@ -17,6 +18,7 @@ import {
 export default function Scholarships() {
   const router = useRouter();
   const [showFilters, setShowFilters] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [selectedState, setSelectedState] = useState<string | null>(null);
   const LIMIT = 10;
 
@@ -53,6 +55,12 @@ export default function Scholarships() {
 
   /* ---------------- ACTIONS ---------------- */
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  }, [refetch]);
+
   const applyFilter = () => {
     refetch();
     setShowFilters(false);
@@ -69,6 +77,14 @@ export default function Scholarships() {
       <ScrollView
         contentContainerStyle={{ padding: 16, paddingBottom: 140 }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#1976d2"]} // Android color
+            tintColor="#1976d2" // iOS color
+          />
+        }
       >
         {/* FILTER BUTTON */}
         <Pressable

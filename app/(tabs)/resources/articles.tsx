@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   View,
@@ -31,6 +32,7 @@ export default function Articles() {
     isFetchingNextPage,
     isLoading,
     isRefetching,
+    refetch,
   } = useInfiniteQuery({
     queryKey: ["article-list", selectedCategory],
     // Explicitly type and cast pageParam to ensure fetchArticles accepts it
@@ -52,7 +54,17 @@ export default function Articles() {
 
   return (
     <View className="flex-1 bg-white">
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+      <ScrollView
+        contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={refetch}
+            colors={["#1976d2"]} // Android color
+            tintColor="#1976d2" // iOS color
+          />
+        }
+      >
         {/* Category Tabs */}
         <ScrollView
           horizontal
