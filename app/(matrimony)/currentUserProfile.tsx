@@ -19,10 +19,12 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useLanguage } from "@/app/lib/LanguageContext";
 import { WhiteHeader } from "../components/WhiteHeader";
 
 export default function CurrentUserProfileScreen() {
   const router = useRouter();
+  const { t } = useLanguage();
   // GET CURRENT USER PROFILE
   const {
     data: myProfile,
@@ -38,7 +40,7 @@ export default function CurrentUserProfileScreen() {
   if (isLoadingMyProfile) {
     return (
       <View className="flex-1 bg-white">
-        <WhiteHeader title="My Profile" />
+        <WhiteHeader title={t("matrimony_my_profile")} />
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#3B82F6" />
         </View>
@@ -55,14 +57,14 @@ export default function CurrentUserProfileScreen() {
   if (myProfileError) {
     return (
       <View className="flex-1 bg-white">
-        <WhiteHeader title="My Profile" />
+        <WhiteHeader title={t("matrimony_my_profile")} />
         <View className="flex-1 items-center justify-center p-5">
           <Text className="text-red-500">
             {(
               myProfileError as unknown as {
                 response?: { data?: { message?: string } };
               }
-            )?.response?.data?.message || "Failed to load profile"}
+            )?.response?.data?.message || t("matrimony_load_profile_error")}
           </Text>
         </View>
       </View>
@@ -88,7 +90,7 @@ export default function CurrentUserProfileScreen() {
 
   return (
     <View className="flex-1 bg-white">
-      <WhiteHeader title="My Profile" />
+      <WhiteHeader title={t("matrimony_my_profile")} />
       <ScrollView className="flex-1" contentContainerStyle={{ padding: 20 }}>
         {/* Profile Header */}
         <View className="items-center mb-6">
@@ -104,16 +106,16 @@ export default function CurrentUserProfileScreen() {
             </View>
           )}
           <Text className="text-2xl font-bold text-gray-900">
-            {myProfile.user?.name || "Anonymous"}
+            {myProfile.user?.name || t("matrimony_anonymous")}
           </Text>
           <Text className="text-gray-600 mt-1">
-            {age ? `${age} years` : "Age not specified"} • {myProfile.gender}
+            {age ? `${age} ${t("matrimony_years")}` : t("matrimony_age_not_specified")} • {myProfile.gender}
           </Text>
           {myProfile.is_verified && (
             <View className="flex-row items-center mt-2 bg-green-100 px-3 py-1 rounded-full">
               <Ionicons name="checkmark-circle" size={16} color="#10B981" />
               <Text className="text-green-700 text-xs ml-1 font-semibold">
-                Verified
+                {t("matrimony_verified")}
               </Text>
             </View>
           )}
@@ -123,7 +125,7 @@ export default function CurrentUserProfileScreen() {
             className="mt-4 bg-blue-600 px-6 py-3 rounded-xl flex-row items-center"
           >
             <Ionicons name="create-outline" size={18} color="white" />
-            <Text className="text-white font-semibold ml-2">Edit Profile</Text>
+            <Text className="text-white font-semibold ml-2">{t("matrimony_edit_profile")}</Text>
           </Pressable>
         </View>
 
@@ -131,7 +133,7 @@ export default function CurrentUserProfileScreen() {
         {myProfile.images && myProfile.images.length > 0 && (
           <View className="mb-4">
             <Text className="text-lg font-bold text-gray-900 mb-3">
-              Photos
+              {t("matrimony_photos")}
             </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View className="flex-row">
@@ -151,60 +153,60 @@ export default function CurrentUserProfileScreen() {
         {/* Details */}
         <View className="bg-gray-50 rounded-2xl p-4 mb-4">
           <Text className="text-lg font-bold text-gray-900 mb-4">
-            Personal Details
+            {t("matrimony_personal_details")}
           </Text>
           {age && (
-            <DetailRow icon="calendar" label="Age" value={`${age} years`} />
+            <DetailRow icon="calendar" label={t("matrimony_age")} value={`${age} ${t("matrimony_years")}`} />
           )}
           {myProfile.height && (
             <DetailRow
               icon="resize"
-              label="Height"
+              label={t("profile_height_label")}
               value={`${myProfile.height} cm`}
             />
           )}
           {myProfile.city && (
-            <DetailRow icon="location" label="City" value={myProfile.city} />
+            <DetailRow icon="location" label={t("profile_city")} value={myProfile.city} />
           )}
           {myProfile.religion && (
             <DetailRow
               icon="book"
-              label="Religion"
+              label={t("profile_religion_label")}
               value={myProfile.religion}
             />
           )}
           {myProfile.caste && (
-            <DetailRow icon="people" label="Caste" value={myProfile.caste} />
+            <DetailRow icon="people" label={t("profile_caste_label")} value={myProfile.caste} />
           )}
         </View>
 
         <View className="bg-gray-50 rounded-2xl p-4 mb-4">
           <Text className="text-lg font-bold text-gray-900 mb-4">
-            Professional Details
+            {t("matrimony_professional_details")}
           </Text>
           {myProfile.education && (
             <DetailRow
               icon="school"
-              label="Education"
+              label={t("profile_education_label")}
               value={myProfile.education}
             />
           )}
           {myProfile.profession && (
             <DetailRow
               icon="briefcase"
-              label="Profession"
+              label={t("profile_occupation_label")}
               value={myProfile.profession}
             />
           )}
           {myProfile.income && (
-            <DetailRow icon="cash" label="Income" value={myProfile.income} />
+            <DetailRow icon="cash" label={t("profile_income_label")} value={myProfile.income} />
           )}
         </View>
 
         {myProfile.about_me_text && (
           <View className="bg-gray-50 rounded-2xl p-4 mb-4">
             <Text className="text-lg font-bold text-gray-900 mb-2">
-              About Me
+              {t("matrimony_about_me")}
             </Text>
             <Text className="text-gray-700 leading-6">
               {myProfile.about_me_text}
@@ -259,6 +261,7 @@ function parseDateString(str: string): Date | null {
 function CreateProfileForm() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
   const [gender, setGender] = useState<"MALE" | "FEMALE" | "OTHER">("MALE");
   const [dob, setDob] = useState("");
   const [dateObj, setDateObj] = useState<Date | null>(null);
@@ -327,17 +330,17 @@ function CreateProfileForm() {
         }
       }
       
-      Alert.alert("Success", "Profile created successfully", [
+      Alert.alert(t("matrimony_success"), t("matrimony_profile_created"), [
         {
-          text: "OK",
+          text: t("matrimony_ok"),
           onPress: () => router.back(),
         },
       ]);
     },
     onError: (error: any) => {
       Alert.alert(
-        "Error",
-        error?.response?.data?.message || "Failed to create profile"
+        t("matrimony_error"),
+        error?.response?.data?.message || t("matrimony_failed_create_profile")
       );
     },
   });
@@ -346,8 +349,8 @@ function CreateProfileForm() {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
       Alert.alert(
-        "Permission Required",
-        "Please grant permission to access your photos"
+        t("matrimony_permission_required"),
+        t("matrimony_permission_photos")
       );
       return;
     }
@@ -362,7 +365,7 @@ function CreateProfileForm() {
       const uris = result.assets.map((asset) => asset.uri);
       const totalImages = newImageUris.length + uris.length;
       if (totalImages > 5) {
-        Alert.alert("Error", "Maximum 5 images allowed");
+        Alert.alert(t("matrimony_error"), t("matrimony_max_images"));
         return;
       }
       setNewImageUris([...newImageUris, ...uris]);
@@ -386,7 +389,7 @@ function CreateProfileForm() {
   const handleSubmit = () => {
     // Only validate dob if it's not from user profile
     if (!isDobDisabled && !dob) {
-      Alert.alert("Error", "Date of birth is required");
+      Alert.alert(t("matrimony_error"), t("matrimony_dob_required"));
       return;
     }
 
@@ -394,7 +397,7 @@ function CreateProfileForm() {
     if (dob) {
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
       if (!dateRegex.test(dob)) {
-        Alert.alert("Error", "Date of birth must be in YYYY-MM-DD format");
+        Alert.alert(t("matrimony_error"), t("matrimony_dob_format"));
         return;
       }
     }
@@ -417,7 +420,7 @@ function CreateProfileForm() {
 
   return (
     <View className="flex-1 bg-white">
-      <WhiteHeader title="Create Profile" />
+      <WhiteHeader title={t("matrimony_create_profile")} />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
@@ -428,16 +431,16 @@ function CreateProfileForm() {
           showsVerticalScrollIndicator={false}
         >
           <Text className="text-2xl font-bold text-gray-900 mb-2">
-            Create Matrimony Profile
+            {t("matrimony_create_profile_title")}
           </Text>
           <Text className="text-gray-600 mb-6">
-            Fill in your details to create your matrimony profile
+            {t("matrimony_create_profile_form_desc")}
           </Text>
 
           {/* Images Section */}
           <View className="mb-6">
             <Text className="text-gray-900 font-semibold mb-3">
-              Profile Images
+              {t("matrimony_profile_images")}
             </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View className="flex-row">
@@ -463,12 +466,12 @@ function CreateProfileForm() {
               </View>
             </ScrollView>
             <Text className="text-gray-500 text-xs mt-2">
-              Maximum 5 images allowed
+              {t("matrimony_max_images")}
             </Text>
           </View>
 
           {/* Gender */}
-          <Text className="text-gray-900 font-semibold mb-2">Gender *</Text>
+          <Text className="text-gray-900 font-semibold mb-2">{t("matrimony_gender_required")}</Text>
           <View className="flex-row mb-4">
             {(["MALE", "FEMALE", "OTHER"] as const).map((g) => (
               <Pressable
@@ -493,10 +496,10 @@ function CreateProfileForm() {
 
           {/* Date of Birth */}
           <Text className="text-gray-900 font-semibold mb-2">
-            Date of Birth {!isDobDisabled ? "*" : ""} (YYYY-MM-DD)
+            {t("profile_dob_label")} {!isDobDisabled ? "*" : ""} (YYYY-MM-DD)
             {isDobDisabled && (
               <Text className="text-gray-500 text-xs ml-2">
-                (from your profile)
+                {t("matrimony_dob_from_profile")}
               </Text>
             )}
           </Text>
@@ -541,7 +544,7 @@ function CreateProfileForm() {
                   onPress={() => setIsDatePickerVisible(false)}
                   className="mt-2 bg-blue-600 py-2 rounded-lg items-center"
                 >
-                  <Text className="text-white font-semibold">Done</Text>
+                  <Text className="text-white font-semibold">{t("matrimony_done")}</Text>
                 </Pressable>
               </View>
             ) : (
@@ -557,7 +560,7 @@ function CreateProfileForm() {
             ))}
 
           {/* Height */}
-          <Text className="text-gray-900 font-semibold mb-2">Height (cm)</Text>
+          <Text className="text-gray-900 font-semibold mb-2">{t("matrimony_height_cm")}</Text>
           <TextInput
             value={height}
             onChangeText={setHeight}
@@ -568,71 +571,71 @@ function CreateProfileForm() {
           />
 
           {/* Religion */}
-          <Text className="text-gray-900 font-semibold mb-2">Religion</Text>
+          <Text className="text-gray-900 font-semibold mb-2">{t("profile_religion_label")}</Text>
           <TextInput
             value={religion}
             onChangeText={setReligion}
-            placeholder="Enter your religion"
+            placeholder={t("matrimony_enter_religion")}
             className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4"
             placeholderTextColor="#9CA3AF"
           />
 
           {/* Caste */}
-          <Text className="text-gray-900 font-semibold mb-2">Caste</Text>
+          <Text className="text-gray-900 font-semibold mb-2">{t("profile_caste_label")}</Text>
           <TextInput
             value={caste}
             onChangeText={setCaste}
-            placeholder="Enter your caste"
+            placeholder={t("matrimony_enter_caste")}
             className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4"
             placeholderTextColor="#9CA3AF"
           />
 
           {/* City */}
-          <Text className="text-gray-900 font-semibold mb-2">City</Text>
+          <Text className="text-gray-900 font-semibold mb-2">{t("profile_city")}</Text>
           <TextInput
             value={city}
             onChangeText={setCity}
-            placeholder="Enter your city"
+            placeholder={t("matrimony_enter_city")}
             className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4"
             placeholderTextColor="#9CA3AF"
           />
 
           {/* Education */}
-          <Text className="text-gray-900 font-semibold mb-2">Education</Text>
+          <Text className="text-gray-900 font-semibold mb-2">{t("profile_education_label")}</Text>
           <TextInput
             value={education}
             onChangeText={setEducation}
-            placeholder="Enter your education"
+            placeholder={t("matrimony_enter_education")}
             className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4"
             placeholderTextColor="#9CA3AF"
           />
 
           {/* Profession */}
-          <Text className="text-gray-900 font-semibold mb-2">Profession</Text>
+          <Text className="text-gray-900 font-semibold mb-2">{t("profile_occupation_label")}</Text>
           <TextInput
             value={profession}
             onChangeText={setProfession}
-            placeholder="Enter your profession"
+            placeholder={t("matrimony_enter_profession")}
             className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4"
             placeholderTextColor="#9CA3AF"
           />
 
           {/* Income */}
-          <Text className="text-gray-900 font-semibold mb-2">Income</Text>
+          <Text className="text-gray-900 font-semibold mb-2">{t("profile_income_label")}</Text>
           <TextInput
             value={income}
             onChangeText={setIncome}
-            placeholder="Enter your income"
+            placeholder={t("matrimony_enter_income")}
             className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4"
             placeholderTextColor="#9CA3AF"
           />
 
           {/* About Me */}
-          <Text className="text-gray-900 font-semibold mb-2">About Me</Text>
+          <Text className="text-gray-900 font-semibold mb-2">{t("matrimony_about_me")}</Text>
           <TextInput
             value={aboutMe}
             onChangeText={setAboutMe}
-            placeholder="Tell us about yourself"
+            placeholder={t("matrimony_tell_about")}
             multiline
             numberOfLines={4}
             className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-6"
@@ -650,7 +653,7 @@ function CreateProfileForm() {
               <ActivityIndicator color="white" />
             ) : (
               <Text className="text-white font-bold text-lg">
-                Create Profile
+                {t("matrimony_create_profile")}
               </Text>
             )}
           </Pressable>

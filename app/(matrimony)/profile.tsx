@@ -22,6 +22,7 @@ import {
   getWishlist,
   removeFromWishlist,
 } from "@/app/lib/matrimony.api";
+import { useLanguage } from "@/app/lib/LanguageContext";
 import { WhiteHeader } from "../components/WhiteHeader";
 
 /* =======================================================
@@ -31,6 +32,7 @@ export default function ProfileDetailsScreen() {
   const { profileId } = useLocalSearchParams<{ profileId: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
 
   const [isInWishlist, setIsInWishlist] = useState(false);
   const [viewerVisible, setViewerVisible] = useState(false);
@@ -90,7 +92,7 @@ export default function ProfileDetailsScreen() {
 
     const myUserId = getUserIdFromToken(token);
     if (myUserId === profile.user_id) {
-      Alert.alert("Error", "You cannot chat with yourself");
+      Alert.alert(t("matrimony_error"), t("matrimony_cannot_chat_self"));
       return;
     }
 
@@ -98,7 +100,7 @@ export default function ProfileDetailsScreen() {
       pathname: "/(matrimony)/chat" as any,
       params: {
         otherUserId: profile.user_id,
-        otherUserName: profile.user.name || "User",
+        otherUserName: profile.user.name || t("matrimony_user"),
       },
     });
   };
@@ -107,7 +109,7 @@ export default function ProfileDetailsScreen() {
   if (isLoading || (loadingMyProfile && !profile)) {
     return (
       <View className="flex-1 bg-white">
-        <WhiteHeader title="Profile" />
+        <WhiteHeader title={t("profile_title")} />
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#2563EB" />
         </View>
@@ -122,9 +124,9 @@ export default function ProfileDetailsScreen() {
   if (!profile) {
     return (
       <View className="flex-1 bg-white">
-        <WhiteHeader title="Profile" />
+        <WhiteHeader title={t("profile_title")} />
         <View className="flex-1 items-center justify-center">
-          <Text className="text-red-500">Profile not found</Text>
+          <Text className="text-red-500">{t("matrimony_profile_not_found")}</Text>
         </View>
       </View>
     );
@@ -141,7 +143,7 @@ export default function ProfileDetailsScreen() {
   ======================================================= */
   return (
     <View className="flex-1 bg-gray-50">
-      <WhiteHeader title="Profile Details" />
+      <WhiteHeader title={t("matrimony_profile_details")} />
 
       <ScrollView contentContainerStyle={{ padding: 20 }}>
         {/* HERO IMAGE */}
@@ -167,12 +169,12 @@ export default function ProfileDetailsScreen() {
           )}
 
           <Text className="text-2xl font-bold mt-4">
-            {profile.user.name || "Anonymous"}
+            {profile.user.name || t("matrimony_anonymous")}
           </Text>
 
           {age && (
             <Text className="text-gray-600 mt-1">
-              {age} yrs • {profile.gender}
+              {age} {t("matrimony_yrs")} • {profile.gender}
             </Text>
           )}
         </View>
@@ -180,7 +182,7 @@ export default function ProfileDetailsScreen() {
         {/* GALLERY */}
         {profile.images?.length > 0 && (
           <View className="mb-6">
-            <Text className="text-lg font-bold mb-3">Photos</Text>
+            <Text className="text-lg font-bold mb-3">{t("matrimony_photos")}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {profile.images.map((img, index) => (
                 <Pressable
@@ -210,7 +212,7 @@ export default function ProfileDetailsScreen() {
             className="flex-1 bg-blue-600 py-4 rounded-xl mr-2 items-center"
           >
             <Ionicons name="chatbubble-ellipses" size={20} color="white" />
-            <Text className="text-white font-semibold mt-1">Chat</Text>
+            <Text className="text-white font-semibold mt-1">{t("matrimony_chat")}</Text>
           </Pressable>
 
           <Pressable
@@ -233,65 +235,65 @@ export default function ProfileDetailsScreen() {
                 isInWishlist ? "text-red-600" : "text-blue-600"
               }`}
             >
-              {isInWishlist ? "Wishlisted" : "Wishlist"}
+              {isInWishlist ? t("matrimony_wishlisted") : t("matrimony_wishlist")}
             </Text>
           </Pressable>
         </View>
 
         {/* PERSONAL */}
-        <InfoCard title="Personal Details">
+        <InfoCard title={t("matrimony_personal_details")}>
           {age && (
-            <Detail label="Age" value={`${age}`} icon="calendar-outline" />
+            <Detail label={t("matrimony_age")} value={`${age}`} icon="calendar-outline" />
           )}
           {profile.height && (
             <Detail
-              label="Height"
+              label={t("profile_height_label")}
               value={`${profile.height} cm`}
               icon="resize-outline"
             />
           )}
           {profile.city && (
-            <Detail label="City" value={profile.city} icon="location-outline" />
+            <Detail label={t("profile_city")} value={profile.city} icon="location-outline" />
           )}
           {profile.state && (
-            <Detail label="State" value={profile.state} icon="map-outline" />
+            <Detail label={t("matrimony_state")} value={profile.state} icon="map-outline" />
           )}
           {profile.religion && (
             <Detail
-              label="Religion"
+              label={t("profile_religion_label")}
               value={profile.religion}
               icon="book-outline"
             />
           )}
           {profile.caste && (
-            <Detail label="Caste" value={profile.caste} icon="people-outline" />
+            <Detail label={t("profile_caste_label")} value={profile.caste} icon="people-outline" />
           )}
         </InfoCard>
 
         {/* PROFESSIONAL */}
-        <InfoCard title="Professional Details">
+        <InfoCard title={t("matrimony_professional_details")}>
           {profile.education && (
             <Detail
-              label="Education"
+              label={t("profile_education_label")}
               value={profile.education}
               icon="school-outline"
             />
           )}
           {profile.profession && (
             <Detail
-              label="Profession"
+              label={t("profile_occupation_label")}
               value={profile.profession}
               icon="briefcase-outline"
             />
           )}
           {profile.income && (
-            <Detail label="Income" value={profile.income} icon="cash-outline" />
+            <Detail label={t("profile_income_label")} value={profile.income} icon="cash-outline" />
           )}
         </InfoCard>
 
         {/* ABOUT */}
         {profile.about_me_text && (
-          <InfoCard title="About Me">
+          <InfoCard title={t("matrimony_about_me")}>
             <Text className="text-gray-700 leading-6">
               {profile.about_me_text}
             </Text>

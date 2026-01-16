@@ -172,25 +172,6 @@ export default function ResourcesIndex() {
           </View>
           <Ionicons name="chevron-forward" size={20} color="#2563EB" />
         </Pressable>
-
-        {/* Matrimony */}
-        <Pressable
-          onPress={() => router.push("/(matrimony)/browse")}
-          className="rounded-3xl border border-[#BFDBFE] bg-[#EFF6FF] p-6 flex-row items-center shadow-sm"
-        >
-          <View className="w-16 h-16 rounded-2xl bg-[#DBEAFE] items-center justify-center mr-4">
-            <Ionicons name="heart" size={32} color="#2563EB" />
-          </View>
-          <View className="flex-1">
-            <Text className="font-semibold text-lg text-[#1E3A8A]">
-              Matrimony
-            </Text>
-            <Text className="text-gray-500 text-sm mt-1">
-              Find your life partner in our verified community
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="#2563EB" />
-        </Pressable>
       </ScrollView>
     </View>
   );

@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useLanguage } from "../lib/LanguageContext";
 import { getUserProfile, updateUserProfile } from "../lib/auth.api";
 import { registerForPushNotifications } from "../lib/notifications";
 
@@ -89,6 +90,7 @@ function parseDateString(str: string): Date | null {
 
 export default function CompleteProfile() {
   const router = useRouter();
+  const { t, lang } = useLanguage();
   const [loading, setLoading] = useState(true);
 
   const [name, setName] = useState("");
@@ -146,28 +148,118 @@ export default function CompleteProfile() {
   }, []);
 
   const handleCompleteProfile = async () => {
+    // Validation - Run BEFORE any async operations
+    const trimmedName = name?.trim() || "";
+    const trimmedEmail = email?.trim() || "";
+    const trimmedPhone = phone?.trim() || "";
+    const trimmedCity = city?.trim() || "";
+    const trimmedState = state?.trim() || "";
+    const trimmedDob = dob?.trim() || "";
+
+    if (!trimmedName || trimmedName.length === 0) {
+      Alert.alert(
+        t("auth_validation_required"),
+        t("auth_validation_name_required")
+      );
+      return;
+    }
+
+    if (!trimmedEmail || trimmedEmail.length === 0) {
+      Alert.alert(
+        t("auth_validation_required"),
+        t("auth_validation_email_required")
+      );
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      Alert.alert(
+        t("auth_validation_required"),
+        t("auth_validation_email_invalid")
+      );
+      return;
+    }
+
+    if (!trimmedPhone || trimmedPhone.length === 0) {
+      Alert.alert(
+        t("auth_validation_required"),
+        t("auth_validation_phone_required")
+      );
+      return;
+    }
+
+    // Remove any non-digit characters for phone validation
+    const phoneDigits = trimmedPhone.replace(/\D/g, "");
+    if (phoneDigits.length < 10) {
+      Alert.alert(t("auth_invalid_phone"), t("auth_invalid_phone_message"));
+      return;
+    }
+
+    if (!trimmedCity || trimmedCity.length === 0) {
+      Alert.alert(
+        t("auth_validation_required"),
+        t("auth_validation_city_required")
+      );
+      return;
+    }
+
+    if (!trimmedState || trimmedState.length === 0) {
+      Alert.alert(
+        t("auth_validation_required"),
+        t("auth_validation_state_required")
+      );
+      return;
+    }
+
+    if (!trimmedDob || trimmedDob.length === 0) {
+      Alert.alert(
+        t("auth_validation_required"),
+        t("auth_validation_dob_required")
+      );
+      return;
+    }
+
+    // Validate date format - parse the date string
+    const parsedDate = parseDateString(trimmedDob);
+    if (!parsedDate) {
+      Alert.alert(
+        t("auth_validation_required"),
+        t("auth_validation_dob_required")
+      );
+      return;
+    }
+
+    // Use parsedDate if dateObj is not set, otherwise use dateObj
+    const finalDateObj = dateObj || parsedDate;
+
+    // Validate gender
+    if (
+      !gender ||
+      (gender !== "MALE" && gender !== "FEMALE" && gender !== "OTHER")
+    ) {
+      Alert.alert(
+        t("auth_validation_required"),
+        t("auth_validation_gender_required")
+      );
+      return;
+    }
+
     try {
       const notificationToken = await registerForPushNotifications();
 
-      if (phone && phone.length < 10) {
-        Alert.alert("Invalid Phone", "Please enter a valid phone number.");
-        return;
-      }
-
       // Convert dob from DD/MM/YYYY to YYYY-MM-DD format for API
-      let dobForAPI: string | undefined = undefined;
-      if (dob && dateObj) {
-        dobForAPI = formatDateStringForAPI(dateObj);
-      }
+      const dobForAPI = formatDateStringForAPI(finalDateObj);
 
       const updateResponse = await updateUserProfile({
-        name: name || undefined,
-        email: email || undefined,
-        phone: phone || undefined,
-        city: city || undefined,
-        state: state || undefined,
+        name: trimmedName,
+        email: trimmedEmail,
+        phone: trimmedPhone,
+        city: trimmedCity,
+        state: trimmedState,
         dob: dobForAPI,
-        gender: gender || undefined,
+        gender: gender,
         notification_token: notificationToken || undefined,
       });
 
@@ -176,13 +268,19 @@ export default function CompleteProfile() {
         await AsyncStorage.setItem("user", JSON.stringify(updateResponse.user));
       }
 
-      if (state) {
-        await AsyncStorage.setItem("userState", state);
+      if (trimmedState) {
+        await AsyncStorage.setItem("userState", trimmedState);
       }
 
       router.replace("/(tabs)/home");
     } catch (error) {
       console.error("Failed to update profile:", error);
+      Alert.alert(
+        t("matrimony_error"),
+        error instanceof Error
+          ? error.message
+          : t("matrimony_failed_update_profile")
+      );
     }
   };
 
@@ -220,17 +318,17 @@ export default function CompleteProfile() {
         <View className="flex-1 justify-between">
           <View className="mt-10">
             <Text className="text-4xl font-bold text-slate-900 tracking-tight">
-              About You
+              {t("auth_about_you")}
             </Text>
             <Text className="text-lg text-slate-500 mt-2 mb-8">
-              Just a few more details to set up your profile.
+              {t("auth_profile_setup_desc")}
             </Text>
 
             <View className="space-y-4">
               <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4">
                 <Ionicons name="person-outline" size={20} color="#64748b" />
                 <TextInput
-                  placeholder="Full Name"
+                  placeholder={t("auth_full_name")}
                   placeholderTextColor="#94a3b8"
                   value={name}
                   onChangeText={setName}
@@ -241,7 +339,7 @@ export default function CompleteProfile() {
               <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 mt-4">
                 <Ionicons name="mail-outline" size={20} color="#64748b" />
                 <TextInput
-                  placeholder="Email"
+                  placeholder={t("auth_email")}
                   placeholderTextColor="#94a3b8"
                   value={email}
                   onChangeText={setEmail}
@@ -256,7 +354,7 @@ export default function CompleteProfile() {
               <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 mt-4">
                 <Ionicons name="call-outline" size={20} color="#64748b" />
                 <TextInput
-                  placeholder="Phone Number"
+                  placeholder={t("auth_phone_number")}
                   placeholderTextColor="#94a3b8"
                   value={phone}
                   onChangeText={setPhone}
@@ -266,7 +364,7 @@ export default function CompleteProfile() {
               </View>
 
               <View className="flex-row justify-between mt-4">
-                {["MALE", "FEMALE", "OTHER"].map((item) => (
+                {(["MALE", "FEMALE", "OTHER"] as const).map((item) => (
                   <Pressable
                     key={item}
                     onPress={() => setGender(item)}
@@ -283,7 +381,11 @@ export default function CompleteProfile() {
                         gender === item ? "text-blue-600" : "text-slate-500",
                       ].join(" ")}
                     >
-                      {item}
+                      {item === "MALE"
+                        ? t("auth_gender_male")
+                        : item === "FEMALE"
+                        ? t("auth_gender_female")
+                        : t("auth_gender_other")}
                     </Text>
                   </Pressable>
                 ))}
@@ -292,7 +394,7 @@ export default function CompleteProfile() {
               <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 mt-4">
                 <Ionicons name="location-outline" size={20} color="#64748b" />
                 <TextInput
-                  placeholder="City"
+                  placeholder={t("profile_city")}
                   placeholderTextColor="#94a3b8"
                   value={city}
                   onChangeText={setCity}
@@ -323,7 +425,7 @@ export default function CompleteProfile() {
                       state ? "text-slate-900" : "text-slate-400"
                     }`}
                   >
-                    {state || "Select State"}
+                    {state || t("auth_select_state")}
                   </Text>
                 </View>
                 <Ionicons name="chevron-down" size={20} color="#94a3b8" />
@@ -340,7 +442,7 @@ export default function CompleteProfile() {
                   <View className="bg-white rounded-3xl max-h-[70%] overflow-hidden">
                     <View className="p-4 border-b border-slate-100 items-center">
                       <Text className="text-lg font-bold text-slate-900">
-                        Select State
+                        {t("auth_select_state")}
                       </Text>
                     </View>
 
@@ -374,7 +476,7 @@ export default function CompleteProfile() {
                       className="p-4 items-center bg-slate-100"
                     >
                       <Text className="text-slate-600 font-semibold">
-                        Cancel
+                        {t("auth_cancel")}
                       </Text>
                     </Pressable>
                   </View>
@@ -385,7 +487,7 @@ export default function CompleteProfile() {
                 <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4">
                   <Ionicons name="calendar-outline" size={20} color="#64748b" />
                   <TextInput
-                    placeholder="Date of Birth (DD/MM/YYYY)"
+                    placeholder={t("auth_dob_placeholder")}
                     placeholderTextColor="#94a3b8"
                     value={dob}
                     onChangeText={(text) => {
@@ -443,7 +545,7 @@ export default function CompleteProfile() {
                                 fontSize: 16,
                               }}
                             >
-                              Done
+                              {t("matrimony_done")}
                             </Text>
                           </Pressable>
                         </View>
@@ -466,8 +568,10 @@ export default function CompleteProfile() {
               <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 mt-4">
                 <Ionicons name="globe-outline" size={20} color="#64748b" />
                 <Text className="ml-3 flex-1 text-base text-slate-400">
-                  Preferred Language:{" "}
-                  <Text className="text-slate-900">English</Text>
+                  {t("auth_preferred_language")}{" "}
+                  <Text className="text-slate-900">
+                    {t(`profile_lang_${lang}`)}
+                  </Text>
                 </Text>
                 <Ionicons name="chevron-forward" size={16} color="#94a3b8" />
               </View>
@@ -480,12 +584,12 @@ export default function CompleteProfile() {
               className="bg-blue-600 py-4 rounded-2xl items-center shadow-md shadow-blue-200"
             >
               <Text className="text-white font-bold text-lg">
-                Complete Profile
+                {t("auth_complete_profile")}
               </Text>
             </Pressable>
 
             <Text className="text-slate-400 text-center text-xs mt-4">
-              By continuing, you agree to our Terms of Service.
+              {t("auth_terms_agreement")}
             </Text>
           </View>
         </View>

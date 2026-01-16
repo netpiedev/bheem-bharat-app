@@ -17,12 +17,14 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { fetchHostelById } from "@/app/lib/hostels.api";
+import { useLanguage } from "@/app/lib/LanguageContext";
 
 const { width, height } = Dimensions.get("window");
 
 export default function DetailedHostelPage() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { t } = useLanguage();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
@@ -84,7 +86,7 @@ export default function DetailedHostelPage() {
       <View className="flex-1 bg-gray-50 items-center justify-center">
         <ActivityIndicator size="large" color="#3B82F6" />
         <Text className="text-gray-500 mt-3 font-medium">
-          Loading hostel details...
+          {t("hostel_loading")}
         </Text>
       </View>
     );
@@ -95,13 +97,15 @@ export default function DetailedHostelPage() {
       <SafeAreaView className="flex-1 bg-white items-center justify-center p-6">
         <Ionicons name="alert-circle-outline" size={64} color="#EF4444" />
         <Text className="text-gray-800 text-lg font-semibold mt-4">
-          Failed to load hostel details
+          {t("hostel_failed_load")}
         </Text>
         <Pressable
           onPress={() => router.back()}
           className="mt-6 bg-blue-500 px-6 py-3 rounded-full"
         >
-          <Text className="text-white font-semibold">Go Back</Text>
+          <Text className="text-white font-semibold">
+            {t("hostel_go_back")}
+          </Text>
         </Pressable>
       </SafeAreaView>
     );
@@ -134,7 +138,7 @@ export default function DetailedHostelPage() {
                   <View className="absolute bottom-4 right-4 bg-black/70 backdrop-blur-sm px-3 py-2 rounded-full flex-row items-center">
                     <Ionicons name="images" size={16} color="white" />
                     <Text className="text-white font-bold text-sm ml-1">
-                      {hostel.images.length} Photos
+                      {hostel.images.length} {t("hostel_photos")}
                     </Text>
                   </View>
                 )}
@@ -143,7 +147,7 @@ export default function DetailedHostelPage() {
                 <View className="absolute top-4 right-4 bg-black/60 px-3 py-2 rounded-full flex-row items-center">
                   <Ionicons name="expand" size={14} color="white" />
                   <Text className="text-white text-xs font-semibold ml-1">
-                    Tap to view
+                    {t("hostel_tap_to_view")}
                   </Text>
                 </View>
               </Pressable>
@@ -211,26 +215,30 @@ export default function DetailedHostelPage() {
                   <View className="flex-row items-center mb-2">
                     <Ionicons name="people" size={20} color="#3B82F6" />
                     <Text className="text-gray-600 text-xs font-semibold ml-2 uppercase">
-                      Capacity
+                      {t("hostel_capacity")}
                     </Text>
                   </View>
                   <Text className="text-gray-900 font-bold text-xl">
                     {hostel.capacity}
                   </Text>
-                  <Text className="text-gray-500 text-xs">Students</Text>
+                  <Text className="text-gray-500 text-xs">
+                    {t("hostel_students")}
+                  </Text>
                 </View>
 
                 <View className="flex-1 bg-green-50 p-4 rounded-2xl">
                   <View className="flex-row items-center mb-2">
                     <Ionicons name="cash" size={20} color="#10B981" />
                     <Text className="text-gray-600 text-xs font-semibold ml-2 uppercase">
-                      Monthly Fee
+                      {t("hostel_monthly_fee")}
                     </Text>
                   </View>
                   <Text className="text-gray-900 font-bold text-xl">
                     ₹{hostel.monthly_fee.toLocaleString()}
                   </Text>
-                  <Text className="text-gray-500 text-xs">Per Month</Text>
+                  <Text className="text-gray-500 text-xs">
+                    {t("hostel_per_month")}
+                  </Text>
                 </View>
               </View>
             </View>
@@ -242,7 +250,7 @@ export default function DetailedHostelPage() {
                   <Ionicons name="location" size={24} color="#3B82F6" />
                 </View>
                 <Text className="text-lg font-bold text-gray-900 ml-3">
-                  Location
+                  {t("hostel_location")}
                 </Text>
               </View>
 
@@ -282,7 +290,7 @@ export default function DetailedHostelPage() {
               >
                 <Ionicons name="navigate" size={18} color="#3B82F6" />
                 <Text className="text-blue-600 font-bold ml-2">
-                  Open in Maps
+                  {t("hostel_open_in_maps")}
                 </Text>
               </Pressable>
             </View>
@@ -294,13 +302,13 @@ export default function DetailedHostelPage() {
                   <Ionicons name="call" size={24} color="#10B981" />
                 </View>
                 <Text className="text-lg font-bold text-gray-900 ml-3">
-                  Contact Information
+                  {t("hostel_contact_info")}
                 </Text>
               </View>
 
               <View className="bg-gray-50 p-4 rounded-2xl mb-3">
                 <Text className="text-gray-500 text-xs font-semibold uppercase mb-1">
-                  Phone Number
+                  {t("hostel_phone_number")}
                 </Text>
                 <Text className="text-gray-900 font-bold text-lg">
                   {hostel.contact_phone}
@@ -310,7 +318,7 @@ export default function DetailedHostelPage() {
               {hostel.contact_person && (
                 <View className="bg-gray-50 p-4 rounded-2xl">
                   <Text className="text-gray-500 text-xs font-semibold uppercase mb-1">
-                    Contact Person
+                    {t("hostel_contact_person")}
                   </Text>
                   <Text className="text-gray-900 font-semibold text-base">
                     {hostel.contact_person}
@@ -326,7 +334,7 @@ export default function DetailedHostelPage() {
                   <Ionicons name="star" size={24} color="#8B5CF6" />
                 </View>
                 <Text className="text-lg font-bold text-gray-900 ml-3">
-                  Facilities & Amenities
+                  {t("hostel_facilities")}
                 </Text>
               </View>
               <Text className="text-gray-700 text-base leading-7">
@@ -341,7 +349,7 @@ export default function DetailedHostelPage() {
                   <Ionicons name="checkmark-circle" size={24} color="#F97316" />
                 </View>
                 <Text className="text-lg font-bold text-gray-900 ml-3">
-                  Eligibility Criteria
+                  {t("hostel_eligibility")}
                 </Text>
               </View>
               <Text className="text-gray-700 text-base leading-7">
@@ -362,13 +370,16 @@ export default function DetailedHostelPage() {
               >
                 <Ionicons name="call" size={22} color="white" />
                 <Text className="text-white font-bold text-base ml-2">
-                  Call Now
+                  {t("hostel_call_now")}
                 </Text>
               </Pressable>
 
               <Pressable
                 onPress={() => {
-                  const message = `Hi, I'm interested in ${hostel.name}. Can you provide more information?`;
+                  const message = t("hostel_sms_message").replace(
+                    "{{name}}",
+                    hostel.name
+                  );
                   Linking.openURL(
                     `sms:${hostel.contact_phone}?body=${encodeURIComponent(
                       message

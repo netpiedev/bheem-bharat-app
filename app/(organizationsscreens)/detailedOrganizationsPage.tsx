@@ -1,19 +1,21 @@
-import {
-  View,
-  Text,
-  ActivityIndicator,
-  ScrollView,
-  Pressable,
-  Linking,
-} from "react-native";
-import { useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
+import { useLocalSearchParams } from "expo-router";
+import {
+  ActivityIndicator,
+  Linking,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 
+import { useLanguage } from "@/app/lib/LanguageContext";
 import { fetchOrganizationById } from "@/app/lib/organizations.api";
 
 export default function OrganizationDetails() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { t } = useLanguage();
 
   const {
     data: org,
@@ -34,7 +36,7 @@ export default function OrganizationDetails() {
   if (error || !org)
     return (
       <View className="flex-1 justify-center items-center">
-        <Text>Error loading organization.</Text>
+        <Text>{t("org_error_loading")}</Text>
       </View>
     );
 
@@ -52,19 +54,23 @@ export default function OrganizationDetails() {
 
           <InfoSection
             icon="location-outline"
-            label="Address"
+            label={t("org_address")}
             content={`${org.address}, ${org.city}, ${org.state} ${org.pincode}`}
           />
           <InfoSection
             icon="call-outline"
-            label="Contact"
+            label={t("org_contact")}
             content={org.phone}
           />
-          <InfoSection icon="mail-outline" label="Email" content={org.email} />
+          <InfoSection
+            icon="mail-outline"
+            label={t("org_email")}
+            content={org.email}
+          />
           {org.website_url && (
             <InfoSection
               icon="globe-outline"
-              label="Website"
+              label={t("org_website")}
               content={org.website_url}
               isLink
             />
@@ -74,7 +80,7 @@ export default function OrganizationDetails() {
         {/* Description Card */}
         <View className="bg-white rounded-2xl p-6 mb-6 shadow-sm border border-blue-50">
           <Text className="text-base font-bold text-gray-900 mb-3">
-            Description
+            {t("org_description")}
           </Text>
           <Text className="text-gray-600 text-[15px] leading-6">
             {org.description}
@@ -88,7 +94,9 @@ export default function OrganizationDetails() {
             className="flex-1 bg-[#1D72D2] flex-row items-center justify-center py-4 rounded-xl active:opacity-90"
           >
             <Ionicons name="call" size={20} color="white" />
-            <Text className="text-white font-bold ml-2 text-base">Call</Text>
+            <Text className="text-white font-bold ml-2 text-base">
+              {t("org_call")}
+            </Text>
           </Pressable>
 
           <Pressable
@@ -97,7 +105,7 @@ export default function OrganizationDetails() {
           >
             <Ionicons name="mail" size={20} color="#1D72D2" />
             <Text className="text-[#1D72D2] font-bold ml-2 text-base">
-              Email
+              {t("org_email_button")}
             </Text>
           </Pressable>
         </View>

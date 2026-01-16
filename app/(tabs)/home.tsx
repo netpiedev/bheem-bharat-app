@@ -16,6 +16,7 @@ import {
 
 import Header from "@/app/components/homescreen/Header";
 
+import { useLanguage } from "@/app/lib/LanguageContext";
 import { fetchArticles } from "@/app/lib/articles.api";
 import { fetchHostels } from "@/app/lib/hostels.api";
 import { getMyProfile } from "@/app/lib/matrimony.api";
@@ -23,6 +24,7 @@ import { fetchOrganizations } from "@/app/lib/organizations.api";
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [refreshing, setRefreshing] = useState(false);
   const [selectedState, setSelectedState] = useState<string | undefined>(
     undefined
@@ -99,14 +101,14 @@ export default function HomeScreen() {
         <View className="flex-row items-center mb-2">
           <View className="w-2 h-2 rounded-full bg-white mr-2" />
           <Text className="text-white opacity-80 uppercase text-xs font-bold tracking-widest">
-            Featured
+            {t("home_featured")}
           </Text>
         </View>
         <Text className="text-white text-xl font-bold mb-2">
-          Special Matrimony Drive
+          {t("home_matrimony_drive_title")}
         </Text>
         <Text className="text-white/80 mb-4">
-          Join our verified community matrimony platform.
+          {t("home_matrimony_drive_desc")}
         </Text>
         <Pressable
           onPress={() =>
@@ -118,13 +120,17 @@ export default function HomeScreen() {
           }
           className="bg-white self-start px-6 py-3 rounded-lg"
         >
-          <Text className="text-[#014BB4] font-medium">Explore Now</Text>
+          <Text className="text-[#014BB4] font-medium">
+            {t("home_explore_now")}
+          </Text>
         </Pressable>
       </View>
 
       {/* Hostels Section (Filtered) */}
       <HorizontalSection
-        title={`Hostels ${selectedState ? `in ${selectedState}` : ""}`}
+        title={`${t("home_hostels")} ${
+          selectedState ? `${t("home_in")} ${selectedState}` : ""
+        }`}
         icon="bed-outline"
         route="/resources/hostels"
         data={hostels?.data || []}
@@ -170,7 +176,7 @@ export default function HomeScreen() {
               <View className="flex-row items-center mt-3">
                 <Ionicons name="person-outline" size={14} color="#2563eb" />
                 <Text className="text-gray-400 text-[#2563eb] text-xs ml-2">
-                  Capacity: {item.capacity}
+                  {t("home_capacity")} {item.capacity}
                 </Text>
               </View>
             </View>
@@ -181,9 +187,9 @@ export default function HomeScreen() {
       {/* Stats Section */}
       <View className="flex-row justify-between px-5 my-6">
         {[
-          { label: "Profiles", val: "5,000+", icon: "people" },
-          { label: "Cities", val: "50+", icon: "location" },
-          { label: "Stories", val: "500+", icon: "ribbon" },
+          { label: t("home_profiles"), val: "5,000+", icon: "people" },
+          { label: t("home_cities"), val: "50+", icon: "location" },
+          { label: t("home_stories"), val: "500+", icon: "ribbon" },
         ].map((stat, i) => (
           <View
             key={i}
@@ -199,7 +205,7 @@ export default function HomeScreen() {
 
       {/* News & Articles */}
       <HorizontalSection
-        title="News & Articles"
+        title={t("home_news_articles")}
         route="/resources/articles"
         icon="newspaper-outline"
         data={articles?.data || []}
@@ -225,7 +231,7 @@ export default function HomeScreen() {
               </Text>
             </View>
             <TouchableOpacity className="bg-white/20 self-start px-3 py-1 rounded-md">
-              <Text className="text-white text-xs">Read More</Text>
+              <Text className="text-white text-xs">{t("home_read_more")}</Text>
             </TouchableOpacity>
           </Pressable>
         )}
@@ -233,7 +239,9 @@ export default function HomeScreen() {
 
       {/* Organizations Section (Filtered) */}
       <HorizontalSection
-        title={`Organizations ${selectedState ? `in ${selectedState}` : ""}`}
+        title={`${t("home_organizations")} ${
+          selectedState ? `${t("home_in")} ${selectedState}` : ""
+        }`}
         icon="business-outline"
         route="/resources/organizations"
         data={organizations?.data || []}
@@ -280,6 +288,7 @@ const HorizontalSection = ({
   renderItem,
 }: SectionProps) => {
   const router = useRouter();
+  const { t } = useLanguage();
 
   return (
     <View className="my-4">
@@ -293,7 +302,7 @@ const HorizontalSection = ({
         </View>
 
         <Pressable onPress={() => router.push(route as any)} hitSlop={20}>
-          <Text className="text-blue-600">View All</Text>
+          <Text className="text-blue-600">{t("home_view_all")}</Text>
         </Pressable>
       </View>
 
@@ -310,32 +319,33 @@ const HorizontalSection = ({
   );
 };
 
-const resources = [
-  {
-    id: "1",
-    title: "BuddhaVihar Directory",
-    sub: "Find BuddhaVihars near you",
-    icon: "business-outline",
-    route: "/buddhavihar",
-  },
-  {
-    id: "2",
-    title: "Scholarships & Education",
-    sub: "Latest schemes and updates",
-    icon: "school-outline",
-    route: "/resources/scholarships",
-  },
-  {
-    id: "3",
-    title: "Matrimony",
-    sub: "Find your partner",
-    icon: "heart-outline",
-    route: "/(matrimony)/browse",
-  },
-];
-
 const ResourceScroll = () => {
   const router = useRouter();
+  const { t } = useLanguage();
+
+  const resources = [
+    {
+      id: "1",
+      title: t("home_buddhavihar_title"),
+      sub: t("home_buddhavihar_sub"),
+      icon: "business-outline",
+      route: "/buddhavihar",
+    },
+    {
+      id: "2",
+      title: t("home_scholarships_title"),
+      sub: t("home_scholarships_sub"),
+      icon: "school-outline",
+      route: "/resources/scholarships",
+    },
+    {
+      id: "3",
+      title: t("home_matrimony_title"),
+      sub: t("home_matrimony_sub"),
+      icon: "heart-outline",
+      route: "/(matrimony)/browse",
+    },
+  ];
 
   return (
     <FlatList

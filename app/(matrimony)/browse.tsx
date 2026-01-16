@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 
+import { useLanguage } from "@/app/lib/LanguageContext";
 import {
   addToWishlist,
   getProfiles,
@@ -43,12 +44,18 @@ const getAge = (p: MatrimonyProfileWithUser) => {
 export default function BrowseProfilesScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
 
   const [page, setPage] = useState(1);
   const [gender, setGender] = useState<"" | "MALE" | "FEMALE">("");
   const [city, setCity] = useState("");
   const [debouncedCity, setDebouncedCity] = useState("");
   const [wishlistIds, setWishlistIds] = useState<Set<string>>(new Set());
+
+  /* ---------------- RESET PAGE WHEN GENDER CHANGES ---------------- */
+  useEffect(() => {
+    setPage(1);
+  }, [gender]);
 
   /* ---------------- DEBOUNCE CITY (500ms) ---------------- */
   useEffect(() => {
@@ -129,7 +136,7 @@ export default function BrowseProfilesScreen() {
         <View className="p-3">
           <View className="flex-row items-center justify-between">
             <Text className="font-bold text-gray-900">
-              {item.user.name || "Anonymous"}
+              {item.user.name || t("matrimony_anonymous")}
               {age ? `, ${age}` : ""}
             </Text>
             <Ionicons name="star" size={16} color="#FACC15" />
@@ -160,7 +167,7 @@ export default function BrowseProfilesScreen() {
               className="px-3 py-1.5 bg-blue-50 rounded-lg"
             >
               <Text className="text-blue-600 font-semibold text-sm">
-                View →
+                {t("matrimony_view")}
               </Text>
             </Pressable>
 
@@ -190,7 +197,7 @@ export default function BrowseProfilesScreen() {
   if (isLoading && !data) {
     return (
       <View className="flex-1 bg-gray-50">
-        <WhiteHeader title="All Profiles" />
+        <WhiteHeader title={t("matrimony_all_profiles")} />
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#2563EB" />
         </View>
@@ -201,14 +208,16 @@ export default function BrowseProfilesScreen() {
   if (isError) {
     return (
       <View className="flex-1 bg-gray-50">
-        <WhiteHeader title="All Profiles" />
+        <WhiteHeader title={t("matrimony_all_profiles")} />
         <View className="flex-1 items-center justify-center">
-          <Text className="text-red-500 mb-3">Failed to load profiles</Text>
+          <Text className="text-red-500 mb-3">{t("matrimony_load_error")}</Text>
           <Pressable
             onPress={() => refetch()}
             className="bg-blue-600 px-6 py-3 rounded-lg"
           >
-            <Text className="text-white font-semibold">Retry</Text>
+            <Text className="text-white font-semibold">
+              {t("matrimony_retry")}
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -217,7 +226,7 @@ export default function BrowseProfilesScreen() {
 
   return (
     <View className="flex-1 bg-gray-50">
-      <WhiteHeader title="All Profiles" />
+      <WhiteHeader title={t("matrimony_all_profiles")} />
 
       {/* FILTER BAR */}
       <View className="bg-white px-4 py-3 border-b border-gray-200">
@@ -235,7 +244,11 @@ export default function BrowseProfilesScreen() {
                   gender === g ? "text-blue-600" : "text-gray-500"
                 }`}
               >
-                {g === "" ? "All" : g === "MALE" ? "Groom" : "Bride"}
+                {g === ""
+                  ? t("matrimony_all")
+                  : g === "MALE"
+                  ? t("matrimony_groom")
+                  : t("matrimony_bride")}
               </Text>
             </Pressable>
           ))}
@@ -244,7 +257,7 @@ export default function BrowseProfilesScreen() {
         <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-2">
           <Ionicons name="search" size={16} color="#9CA3AF" />
           <TextInput
-            placeholder="Search by city"
+            placeholder={t("matrimony_search_by_city")}
             value={city}
             onChangeText={setCity}
             className="ml-3 flex-1"

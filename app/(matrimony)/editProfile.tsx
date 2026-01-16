@@ -23,6 +23,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useLanguage } from "@/app/lib/LanguageContext";
 import { WhiteHeader } from "../components/WhiteHeader";
 
 function formatDateString(dateObj: Date): string {
@@ -50,6 +51,7 @@ function parseDateString(str: string): Date | null {
 export default function EditProfileScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
 
   const { data: myProfile, isLoading } = useQuery({
@@ -135,17 +137,17 @@ export default function EditProfileScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["matrimony-my-profile"] });
       queryClient.invalidateQueries({ queryKey: ["matrimony-profiles"] });
-      Alert.alert("Success", "Profile updated successfully", [
+      Alert.alert(t("matrimony_success"), t("matrimony_profile_updated"), [
         {
-          text: "OK",
+          text: t("matrimony_ok"),
           onPress: () => router.back(),
         },
       ]);
     },
     onError: (error: any) => {
       Alert.alert(
-        "Error",
-        error?.response?.data?.message || "Failed to update profile"
+        t("matrimony_error"),
+        error?.response?.data?.message || t("matrimony_failed_update_profile")
       );
     },
   });
@@ -156,12 +158,12 @@ export default function EditProfileScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["matrimony-my-profile"] });
       setNewImageUris([]);
-      Alert.alert("Success", "Images uploaded successfully");
+      Alert.alert(t("matrimony_success"), t("matrimony_images_uploaded"));
     },
     onError: (error: any) => {
       Alert.alert(
-        "Error",
-        error?.response?.data?.message || "Failed to upload images"
+        t("matrimony_error"),
+        error?.response?.data?.message || t("matrimony_failed_upload_images")
       );
     },
   });
@@ -170,8 +172,8 @@ export default function EditProfileScreen() {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
       Alert.alert(
-        "Permission Required",
-        "Please grant permission to access your photos"
+        t("matrimony_permission_required"),
+        t("matrimony_permission_photos")
       );
       return;
     }
@@ -202,7 +204,7 @@ export default function EditProfileScreen() {
     if (dob) {
       const parsed = parseDateString(dob);
       if (!parsed) {
-        Alert.alert("Error", "Invalid date format. Use YYYY-MM-DD");
+        Alert.alert(t("matrimony_error"), t("matrimony_invalid_date_format"));
         return;
       }
       formattedDob = formatDateString(parsed);
@@ -258,7 +260,7 @@ export default function EditProfileScreen() {
     }
 
     if (Object.keys(updatePayload).length === 0 && newImageUris.length === 0) {
-      Alert.alert("Info", "No changes to save");
+      Alert.alert(t("matrimony_info"), t("matrimony_no_changes"));
     }
   };
 
@@ -275,7 +277,7 @@ export default function EditProfileScreen() {
   if (isLoading) {
     return (
       <View className="flex-1 bg-white">
-        <WhiteHeader title="Edit Profile" />
+        <WhiteHeader title={t("matrimony_edit_profile")} />
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#3B82F6" />
         </View>
@@ -286,9 +288,9 @@ export default function EditProfileScreen() {
   if (!myProfile) {
     return (
       <View className="flex-1 bg-white">
-        <WhiteHeader title="Edit Profile" />
+        <WhiteHeader title={t("matrimony_edit_profile")} />
         <View className="flex-1 items-center justify-center p-5">
-          <Text className="text-red-500">Profile not found</Text>
+          <Text className="text-red-500">{t("matrimony_profile_not_found")}</Text>
         </View>
       </View>
     );
@@ -303,7 +305,7 @@ export default function EditProfileScreen() {
 
   return (
     <View className="flex-1 bg-white">
-      <WhiteHeader title="Edit Profile" />
+      <WhiteHeader title={t("matrimony_edit_profile")} />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
@@ -314,16 +316,16 @@ export default function EditProfileScreen() {
           showsVerticalScrollIndicator={false}
         >
           <Text className="text-2xl font-bold text-gray-900 mb-2">
-            Edit Matrimony Profile
+            {t("matrimony_edit_profile_title")}
           </Text>
           <Text className="text-gray-600 mb-6">
-            Update your details and images
+            {t("matrimony_edit_profile_desc")}
           </Text>
 
           {/* Images Section */}
           <View className="mb-6">
             <Text className="text-gray-900 font-semibold mb-3">
-              Profile Images
+              {t("matrimony_profile_images")}
             </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View className="flex-row">
@@ -363,12 +365,12 @@ export default function EditProfileScreen() {
               </View>
             </ScrollView>
             <Text className="text-gray-500 text-xs mt-2">
-              Maximum 5 images allowed
+              {t("matrimony_max_images")}
             </Text>
           </View>
 
           {/* Gender */}
-          <Text className="text-gray-900 font-semibold mb-2">Gender</Text>
+          <Text className="text-gray-900 font-semibold mb-2">{t("profile_gender_label")}</Text>
           <View className="flex-row mb-4">
             {(["MALE", "FEMALE", "OTHER"] as const).map((g) => (
               <Pressable
@@ -393,10 +395,10 @@ export default function EditProfileScreen() {
 
           {/* Date of Birth */}
           <Text className="text-gray-900 font-semibold mb-2">
-            Date of Birth (YYYY-MM-DD)
+            {t("profile_dob_label")} (YYYY-MM-DD)
             {userDob && (
               <Text className="text-gray-500 text-sm font-normal ml-2">
-                (from user profile)
+                {t("matrimony_dob_from_user_profile")}
               </Text>
             )}
           </Text>
@@ -444,7 +446,7 @@ export default function EditProfileScreen() {
                   onPress={() => setIsDatePickerVisible(false)}
                   className="mt-2 bg-blue-600 py-2 rounded-lg items-center"
                 >
-                  <Text className="text-white font-semibold">Done</Text>
+                  <Text className="text-white font-semibold">{t("matrimony_done")}</Text>
                 </Pressable>
               </View>
             ) : (
@@ -460,7 +462,7 @@ export default function EditProfileScreen() {
             ))}
 
           {/* Height */}
-          <Text className="text-gray-900 font-semibold mb-2">Height (cm)</Text>
+          <Text className="text-gray-900 font-semibold mb-2">{t("matrimony_height_cm")}</Text>
           <TextInput
             value={height}
             onChangeText={setHeight}
@@ -471,122 +473,122 @@ export default function EditProfileScreen() {
           />
 
           {/* Religion */}
-          <Text className="text-gray-900 font-semibold mb-2">Religion</Text>
+          <Text className="text-gray-900 font-semibold mb-2">{t("profile_religion_label")}</Text>
           <TextInput
             value={religion}
             onChangeText={setReligion}
-            placeholder="Enter your religion"
+            placeholder={t("matrimony_enter_religion")}
             className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4"
             placeholderTextColor="#9CA3AF"
           />
 
           {/* Caste */}
-          <Text className="text-gray-900 font-semibold mb-2">Caste</Text>
+          <Text className="text-gray-900 font-semibold mb-2">{t("profile_caste_label")}</Text>
           <TextInput
             value={caste}
             onChangeText={setCaste}
-            placeholder="Enter your caste"
+            placeholder={t("matrimony_enter_caste")}
             className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4"
             placeholderTextColor="#9CA3AF"
           />
 
           {/* Region */}
-          <Text className="text-gray-900 font-semibold mb-2">Region</Text>
+          <Text className="text-gray-900 font-semibold mb-2">{t("matrimony_region")}</Text>
           <TextInput
             value={region}
             onChangeText={setRegion}
-            placeholder="Enter your region"
+            placeholder={t("matrimony_enter_region")}
             className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4"
             placeholderTextColor="#9CA3AF"
           />
 
           {/* City */}
-          <Text className="text-gray-900 font-semibold mb-2">City</Text>
+          <Text className="text-gray-900 font-semibold mb-2">{t("profile_city")}</Text>
           <TextInput
             value={city}
             onChangeText={setCity}
-            placeholder="Enter your city"
+            placeholder={t("matrimony_enter_city")}
             className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4"
             placeholderTextColor="#9CA3AF"
           />
 
           {/* State */}
-          <Text className="text-gray-900 font-semibold mb-2">State</Text>
+          <Text className="text-gray-900 font-semibold mb-2">{t("matrimony_state")}</Text>
           <TextInput
             value={state}
             onChangeText={setState}
-            placeholder="Enter your state"
+            placeholder={t("matrimony_enter_city")}
             className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4"
             placeholderTextColor="#9CA3AF"
           />
 
           {/* Village */}
-          <Text className="text-gray-900 font-semibold mb-2">Village</Text>
+          <Text className="text-gray-900 font-semibold mb-2">{t("matrimony_village")}</Text>
           <TextInput
             value={village}
             onChangeText={setVillage}
-            placeholder="Enter your village"
+            placeholder={t("matrimony_enter_village")}
             className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4"
             placeholderTextColor="#9CA3AF"
           />
 
           {/* Education */}
-          <Text className="text-gray-900 font-semibold mb-2">Education</Text>
+          <Text className="text-gray-900 font-semibold mb-2">{t("profile_education_label")}</Text>
           <TextInput
             value={education}
             onChangeText={setEducation}
-            placeholder="Enter your education"
+            placeholder={t("matrimony_enter_education")}
             className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4"
             placeholderTextColor="#9CA3AF"
           />
 
           {/* Profession */}
-          <Text className="text-gray-900 font-semibold mb-2">Profession</Text>
+          <Text className="text-gray-900 font-semibold mb-2">{t("profile_occupation_label")}</Text>
           <TextInput
             value={profession}
             onChangeText={setProfession}
-            placeholder="Enter your profession"
+            placeholder={t("matrimony_enter_profession")}
             className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4"
             placeholderTextColor="#9CA3AF"
           />
 
           {/* Income */}
-          <Text className="text-gray-900 font-semibold mb-2">Income</Text>
+          <Text className="text-gray-900 font-semibold mb-2">{t("profile_income_label")}</Text>
           <TextInput
             value={income}
             onChangeText={setIncome}
-            placeholder="Enter your income"
+            placeholder={t("matrimony_enter_income")}
             className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4"
             placeholderTextColor="#9CA3AF"
           />
 
           {/* Mother Occupation */}
           <Text className="text-gray-900 font-semibold mb-2">
-            Mother Occupation
+            {t("matrimony_mother_occupation")}
           </Text>
           <TextInput
             value={motherOccupation}
             onChangeText={setMotherOccupation}
-            placeholder="Enter mother's occupation"
+            placeholder={t("matrimony_enter_mother_occupation")}
             className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4"
             placeholderTextColor="#9CA3AF"
           />
 
           {/* Father Occupation */}
           <Text className="text-gray-900 font-semibold mb-2">
-            Father Occupation
+            {t("matrimony_father_occupation")}
           </Text>
           <TextInput
             value={fatherOccupation}
             onChangeText={setFatherOccupation}
-            placeholder="Enter father's occupation"
+            placeholder={t("matrimony_enter_father_occupation")}
             className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4"
             placeholderTextColor="#9CA3AF"
           />
 
           {/* Siblings Count */}
           <Text className="text-gray-900 font-semibold mb-2">
-            Siblings Count
+            {t("matrimony_siblings_count")}
           </Text>
           <TextInput
             value={siblingsCount}
@@ -598,11 +600,11 @@ export default function EditProfileScreen() {
           />
 
           {/* About Me */}
-          <Text className="text-gray-900 font-semibold mb-2">About Me</Text>
+          <Text className="text-gray-900 font-semibold mb-2">{t("matrimony_about_me")}</Text>
           <TextInput
             value={aboutMeText}
             onChangeText={setAboutMeText}
-            placeholder="Tell us about yourself"
+            placeholder={t("matrimony_tell_about")}
             multiline
             numberOfLines={4}
             className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-6"
@@ -620,7 +622,7 @@ export default function EditProfileScreen() {
               <ActivityIndicator color="white" />
             ) : (
               <Text className="text-white font-bold text-lg">
-                Save Changes
+                {t("matrimony_save_changes")}
               </Text>
             )}
           </Pressable>

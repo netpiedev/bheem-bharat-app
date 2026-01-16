@@ -14,6 +14,7 @@ import {
 } from "react-native";
 
 import { getMyProfile, getProfiles } from "@/app/lib/matrimony.api";
+import { useLanguage } from "@/app/lib/LanguageContext";
 import type { MatrimonyProfileWithUser } from "@/app/types/matrimony.types";
 
 /* ------------------ FALLBACK AVATARS ------------------ */
@@ -55,6 +56,7 @@ const getProfileImage = (profile: MatrimonyProfileWithUser) => {
 /* ------------------ SCREEN ------------------ */
 export default function MatrimonyTab() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [gender, setGender] = useState<"MALE" | "FEMALE">("MALE");
 
   const { data, isLoading, isError } = useQuery({
@@ -76,10 +78,10 @@ export default function MatrimonyTab() {
       {/* HEADER */}
       <View className="bg-blue-600 px-5 pt-12 pb-8 rounded-b-3xl">
         <Text className="text-white text-2xl font-bold mb-2">
-          Find Your Life Partner
+          {t("matrimony_find_partner")}
         </Text>
         <Text className="text-blue-100 mb-4">
-          Verified profiles • Trusted matches
+          {t("matrimony_verified_profiles")}
         </Text>
 
         <TouchableOpacity
@@ -88,7 +90,7 @@ export default function MatrimonyTab() {
         >
           <Ionicons name="search" size={18} color="#2563EB" />
           <Text className="ml-3 text-gray-500 flex-1">
-            Search by name, city, profession
+            {t("matrimony_search_placeholder")}
           </Text>
         </TouchableOpacity>
       </View>
@@ -108,7 +110,7 @@ export default function MatrimonyTab() {
                 gender === g ? "text-white" : "text-gray-500"
               }`}
             >
-              {g === "MALE" ? "Groom" : "Bride"}
+              {g === "MALE" ? t("matrimony_groom") : t("matrimony_bride")}
             </Text>
           </TouchableOpacity>
         ))}
@@ -116,14 +118,14 @@ export default function MatrimonyTab() {
 
       {/* FEATURED */}
       <SectionHeader
-        title="Featured Profiles"
+        title={t("matrimony_featured_profiles")}
         onPress={() => router.push("/(matrimony)/browse")}
       />
 
       {isLoading ? (
         <ActivityIndicator className="mt-10" size="large" color="#2563EB" />
       ) : isError ? (
-        <Text className="text-red-500 mx-5">Failed to load profiles</Text>
+        <Text className="text-red-500 mx-5">{t("matrimony_load_error")}</Text>
       ) : (
         <ScrollView
           horizontal
@@ -149,17 +151,17 @@ export default function MatrimonyTab() {
       <View className="mx-5 mt-6 flex-row justify-between">
         <QuickCard
           icon="people-outline"
-          title="Browse"
+          title={t("matrimony_browse")}
           onPress={() => router.push("/(matrimony)/browse")}
         />
         <QuickCard
           icon="heart-outline"
-          title="Wishlist"
+          title={t("matrimony_wishlist")}
           onPress={() => router.push("/(matrimony)/wishlist")}
         />
         <QuickCard
           icon="chatbubble-outline"
-          title="Chats"
+          title={t("matrimony_chats")}
           onPress={() => router.push("/(matrimony)/chats")}
         />
       </View>
@@ -168,10 +170,10 @@ export default function MatrimonyTab() {
       {!myProfile && (
         <View className="mx-5 mt-8 bg-blue-600 rounded-2xl p-6">
           <Text className="text-white text-xl font-bold mb-1">
-            Create Your Profile
+            {t("matrimony_create_profile")}
           </Text>
           <Text className="text-blue-100 mb-4">
-            Start connecting with verified profiles today
+            {t("matrimony_create_profile_desc")}
           </Text>
 
           <TouchableOpacity
@@ -179,7 +181,7 @@ export default function MatrimonyTab() {
             className="bg-white py-3 rounded-xl items-center"
           >
             <Text className="text-blue-600 font-semibold text-base">
-              Get Started
+              {t("matrimony_get_started")}
             </Text>
           </TouchableOpacity>
         </View>
@@ -191,17 +193,19 @@ export default function MatrimonyTab() {
 /* ---------------- COMPONENTS ---------------- */
 
 function SectionHeader({ title, onPress }: any) {
+  const { t } = useLanguage();
   return (
     <View className="mx-5 mt-8 mb-3 flex-row justify-between items-center">
       <Text className="text-lg font-bold text-gray-900">{title}</Text>
       <TouchableOpacity onPress={onPress}>
-        <Text className="text-blue-600 font-medium">View All</Text>
+        <Text className="text-blue-600 font-medium">{t("matrimony_view_all")}</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
 function ProfileCard({ profile, onPress }: any) {
+  const { t } = useLanguage();
   const age = calculateAge(profile.dob);
 
   return (
@@ -218,18 +222,18 @@ function ProfileCard({ profile, onPress }: any) {
 
       <View className="absolute bottom-0 w-full p-4 bg-black/60">
         <Text className="text-white font-bold text-lg">
-          {profile.user?.name || "Anonymous"}
+          {profile.user?.name || t("matrimony_anonymous")}
           {age ? `, ${age}` : ""}
         </Text>
         <Text className="text-gray-200 text-sm">
-          {profile.profession || "Profession not specified"}
+          {profile.profession || t("matrimony_profession_not_specified")}
         </Text>
         <Text className="text-gray-300 text-sm">
-          {profile.city || "City not specified"}
+          {profile.city || t("matrimony_city_not_specified")}
         </Text>
 
         <View className="mt-3 bg-white py-2 rounded-xl items-center">
-          <Text className="font-semibold text-gray-900">View Profile</Text>
+          <Text className="font-semibold text-gray-900">{t("matrimony_view_profile")}</Text>
         </View>
       </View>
     </TouchableOpacity>

@@ -13,10 +13,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 
 import { fetchBookById } from "@/app/lib/books.api";
+import { useLanguage } from "@/app/lib/LanguageContext";
 
 export default function DetailedBookPage() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { t } = useLanguage();
 
   const {
     data: book,
@@ -30,7 +32,7 @@ export default function DetailedBookPage() {
 
   const handleDownload = async () => {
     if (!book?.pdf_file_object_key) {
-      Alert.alert("Error", "Download link not available for this book.");
+      Alert.alert(t("book_error"), t("book_download_link_unavailable"));
       return;
     }
     // Logic to open the PDF URL
@@ -49,7 +51,7 @@ export default function DetailedBookPage() {
     return (
       <View className="flex-1 bg-white items-center justify-center p-6">
         <Ionicons name="alert-circle-outline" size={48} color="#ef4444" />
-        <Text className="text-gray-500 mt-2">Failed to load book details.</Text>
+        <Text className="text-gray-500 mt-2">{t("book_failed_load")}</Text>
       </View>
     );
   }
@@ -83,7 +85,7 @@ export default function DetailedBookPage() {
               {book.author}
             </Text>
             <View className="bg-[#FFE5E5] self-start px-2 py-0.5 rounded-md border border-[#FFD1D1]">
-              <Text className="text-[#FF4D4D] font-bold text-[10px]">PDF</Text>
+              <Text className="text-[#FF4D4D] font-bold text-[10px]">{t("book_pdf")}</Text>
             </View>
           </View>
         </View>
@@ -91,20 +93,20 @@ export default function DetailedBookPage() {
         {/* 2. Description Section */}
         <View className="bg-white border border-[#E9EEF5] rounded-[24px] p-5 mb-5 shadow-sm">
           <Text className="font-bold text-[#1A1C1E] text-[16px] mb-3">
-            Description
+            {t("book_description")}
           </Text>
           <Text className="text-gray-600 leading-6 text-[15px]">
-            {book.description || "No description available for this book."}
+            {book.description || t("book_no_description")}
           </Text>
         </View>
 
         {/* 3. Source Section */}
         <View className="bg-white border border-[#E9EEF5] rounded-[24px] p-5 mb-8 shadow-sm">
           <Text className="font-bold text-[#1A1C1E] text-[16px] mb-2">
-            Source
+            {t("book_source")}
           </Text>
           <Text className="text-gray-600 text-[15px]">
-            {book.source || "Unknown Source"}
+            {book.source || t("book_unknown_source")}
           </Text>
         </View>
 
@@ -115,7 +117,7 @@ export default function DetailedBookPage() {
         >
           <Ionicons name="download-outline" size={22} color="white" />
           <Text className="text-white font-bold text-[16px] ml-2">
-            Download PDF
+            {t("book_download_pdf")}
           </Text>
         </Pressable>
 
@@ -135,7 +137,7 @@ export default function DetailedBookPage() {
         >
           <Ionicons name="eye-outline" size={22} color="white" />
           <Text className="text-white font-bold text-[16px] ml-2">
-            Read Now
+            {t("book_read_now")}
           </Text>
         </Pressable>
       </ScrollView>
