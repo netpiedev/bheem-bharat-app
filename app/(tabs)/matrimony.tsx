@@ -1,19 +1,22 @@
-import { getMyProfile, getProfiles } from "@/app/lib/matrimony.api";
-import type { MatrimonyProfileWithUser } from "@/app/types/matrimony.types";
+"use client";
+
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
+import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Image,
   ScrollView,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 
-/* ------------------ AVATARS ------------------ */
+import { getMyProfile, getProfiles } from "@/app/lib/matrimony.api";
+import type { MatrimonyProfileWithUser } from "@/app/types/matrimony.types";
+
+/* ------------------ FALLBACK AVATARS ------------------ */
 const FEMALE_AVATAR =
   "https://static.vecteezy.com/system/resources/previews/042/332/066/non_2x/person-photo-placeholder-woman-default-avatar-profile-icon-grey-photo-placeholder-female-no-photo-images-for-unfilled-user-profile-greyscale-illustration-for-social-media-free-vector.jpg";
 
@@ -21,7 +24,7 @@ const MALE_AVATAR =
   "https://static.vecteezy.com/system/resources/previews/036/594/092/non_2x/man-empty-avatar-photo-placeholder-for-social-networks-resumes-forums-and-dating-sites-male-and-female-no-photo-images-for-unfilled-user-profile-free-vector.jpg";
 
 /* ------------------ HELPERS ------------------ */
-const calculateAge = (dob?: string) => {
+const calculateAge = (dob?: string | null) => {
   if (!dob) return undefined;
   const birth = new Date(dob);
   const today = new Date();
@@ -31,8 +34,21 @@ const calculateAge = (dob?: string) => {
   return age;
 };
 
+/**
+ * IMAGE PRIORITY (Professional Matrimony Standard)
+ * 1️⃣ profile.images[0]
+ * 2️⃣ user.photo
+ * 3️⃣ gender based avatar
+ */
 const getProfileImage = (profile: MatrimonyProfileWithUser) => {
-  if (profile.user?.photo) return profile.user.photo;
+  if (profile.images?.length && profile.images[0]) {
+    return profile.images[0];
+  }
+
+  if (profile.user?.photo && profile.user.photo.startsWith("http")) {
+    return profile.user.photo;
+  }
+
   return profile.gender === "FEMALE" ? FEMALE_AVATAR : MALE_AVATAR;
 };
 
@@ -42,7 +58,7 @@ export default function MatrimonyTab() {
   const [gender, setGender] = useState<"MALE" | "FEMALE">("MALE");
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["matrimony-featured", gender],
+    queryKey: ["matrimony-profiles", gender],
     queryFn: () => getProfiles({ gender, limit: 10 }),
   });
 
@@ -98,7 +114,7 @@ export default function MatrimonyTab() {
         ))}
       </View>
 
-      {/* ================= FEATURED ================= */}
+      {/* FEATURED */}
       <SectionHeader
         title="Featured Profiles"
         onPress={() => router.push("/(matrimony)/browse")}
@@ -129,7 +145,7 @@ export default function MatrimonyTab() {
         </ScrollView>
       )}
 
-      {/* ================= QUICK ACTIONS ================= */}
+      {/* QUICK ACTIONS */}
       <View className="mx-5 mt-6 flex-row justify-between">
         <QuickCard
           icon="people-outline"
@@ -148,49 +164,7 @@ export default function MatrimonyTab() {
         />
       </View>
 
-      {/* ================= RECOMMENDED ================= */}
-      {!isLoading && !isError && (data?.data?.length ?? 0) > 5 && (
-        <>
-          <SectionHeader
-            title="Recommended For You"
-            onPress={() => router.push("/(matrimony)/browse")}
-          />
-
-          <View className="mx-5">
-            {data?.data?.slice(5, 10).map((profile) => (
-              <TouchableOpacity
-                key={profile.id}
-                onPress={() =>
-                  router.push({
-                    pathname: "/(matrimony)/profile",
-                    params: { profileId: profile.id },
-                  })
-                }
-                className="flex-row items-center bg-white border border-gray-100 rounded-xl p-4 mb-3"
-              >
-                <Image
-                  source={{ uri: getProfileImage(profile) }}
-                  className="w-12 h-12 rounded-full mr-4"
-                />
-
-                <View className="flex-1">
-                  <Text className="font-semibold text-gray-900">
-                    {profile.user?.name || "Anonymous"}
-                  </Text>
-                  <Text className="text-sm text-gray-500">
-                    {calculateAge(profile.dob)} yrs •{" "}
-                    {profile.city || "City not specified"}
-                  </Text>
-                </View>
-
-                <Ionicons name="chevron-forward" size={20} color="#CBD5E1" />
-              </TouchableOpacity>
-            ))}
-          </View>
-        </>
-      )}
-
-      {/* ================= CREATE PROFILE ================= */}
+      {/* CREATE PROFILE CTA */}
       {!myProfile && (
         <View className="mx-5 mt-8 bg-blue-600 rounded-2xl p-6">
           <Text className="text-white text-xl font-bold mb-1">
@@ -236,8 +210,10 @@ function ProfileCard({ profile, onPress }: any) {
       className="w-64 mr-4 rounded-2xl overflow-hidden bg-black"
     >
       <Image
-        source={{ uri: getProfileImage(profile) }}
-        className="w-full h-72"
+        source={getProfileImage(profile)}
+        style={{ width: "100%", height: 288 }}
+        contentFit="cover"
+        transition={200}
       />
 
       <View className="absolute bottom-0 w-full p-4 bg-black/60">

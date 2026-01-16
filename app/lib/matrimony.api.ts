@@ -40,6 +40,8 @@ export const getProfileById = async (
   const { data } = await axiosInstance.get<GetProfileResponse>(
     `/matrimony/profiles/${profileId}`
   );
+  console.log("indivisual profile data is ", JSON.stringify(data));
+
   return data.data;
 };
 

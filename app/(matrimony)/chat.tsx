@@ -3,6 +3,7 @@ import { getUserIdFromToken } from "@/app/lib/jwt";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -19,6 +20,16 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { WhiteHeader } from "../components/WhiteHeader";
 import { useSocket } from "../lib/socket";
+
+const formatTime = (dateString: string) => {
+  const date = new Date(dateString);
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  const ampm = hours >= 12 ? "PM" : "AM";
+  const displayHours = hours % 12 || 12;
+  const displayMinutes = minutes < 10 ? `0${minutes}` : minutes;
+  return `${displayHours}:${displayMinutes} ${ampm}`;
+};
 
 export default function ChatScreen() {
   const { conversationId, otherUserId, otherUserName } = useLocalSearchParams<{
@@ -139,7 +150,12 @@ export default function ChatScreen() {
       >
         <WhiteHeader title={otherUserName || "Chat"} />
 
-        <View style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
+        <LinearGradient
+          colors={["#E0E7FF", "#F3E8FF", "#FCE7F3"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ flex: 1 }}
+        >
           {isLoading ? (
             <ActivityIndicator style={{ marginTop: 40 }} />
           ) : (
@@ -155,22 +171,43 @@ export default function ChatScreen() {
                     key={m.id}
                     style={{
                       alignSelf: isOwn ? "flex-end" : "flex-start",
-                      marginBottom: 8,
+                      marginBottom: 12,
                       maxWidth: "75%",
-                      backgroundColor: isOwn ? "#3B82F6" : "#fff",
-                      padding: 12,
-                      borderRadius: 18,
                     }}
                   >
-                    <Text style={{ color: isOwn ? "white" : "#111" }}>
-                      {m.message}
+                    <View
+                      style={{
+                        backgroundColor: isOwn ? "#3B82F6" : "#fff",
+                        padding: 12,
+                        borderRadius: 18,
+                        shadowColor: "#000",
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: 0.1,
+                        shadowRadius: 2,
+                        elevation: 2,
+                      }}
+                    >
+                      <Text style={{ color: isOwn ? "white" : "#111" }}>
+                        {m.message}
+                      </Text>
+                    </View>
+                    <Text
+                      style={{
+                        fontSize: 11,
+                        color: "#6B7280",
+                        marginTop: 4,
+                        alignSelf: isOwn ? "flex-end" : "flex-start",
+                        marginHorizontal: 4,
+                      }}
+                    >
+                      {formatTime(m.created_at)}
                     </Text>
                   </View>
                 );
               })}
             </ScrollView>
           )}
-        </View>
+        </LinearGradient>
 
         {/* INPUT */}
         <View
