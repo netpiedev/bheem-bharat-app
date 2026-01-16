@@ -11,13 +11,51 @@ import {
   Pressable,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getUserProfile, updateUserProfile } from "../lib/auth.api";
 import { registerForPushNotifications } from "../lib/notifications";
+
+const INDIAN_STATES = [
+  "Andhra Pradesh",
+  "Arunachal Pradesh",
+  "Assam",
+  "Bihar",
+  "Chhattisgarh",
+  "Goa",
+  "Gujarat",
+  "Haryana",
+  "Himachal Pradesh",
+  "Jharkhand",
+  "Karnataka",
+  "Kerala",
+  "Madhya Pradesh",
+  "Maharashtra",
+  "Manipur",
+  "Meghalaya",
+  "Mizoram",
+  "Nagaland",
+  "Odisha",
+  "Punjab",
+  "Rajasthan",
+  "Sikkim",
+  "Tamil Nadu",
+  "Telangana",
+  "Tripura",
+  "Uttar Pradesh",
+  "Uttarakhand",
+  "West Bengal",
+  "Andaman and Nicobar Islands",
+  "Chandigarh",
+  "Dadra and Nagar Haveli and Daman and Diu",
+  "Delhi",
+  "Jammu and Kashmir",
+  "Ladakh",
+  "Lakshadweep",
+  "Puducherry",
+].sort();
 
 function formatDateString(dateObj: Date): string {
   return [
@@ -61,6 +99,7 @@ export default function CompleteProfile() {
   const [state, setState] = useState("");
   const [dob, setDob] = useState("");
 
+  const [isStateModalVisible, setIsStateModalVisible] = useState(false);
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
   const [dateObj, setDateObj] = useState<Date | null>(null);
 
@@ -109,9 +148,7 @@ export default function CompleteProfile() {
   const handleCompleteProfile = async () => {
     try {
       const notificationToken = await registerForPushNotifications();
-  
 
-      
       if (phone && phone.length < 10) {
         Alert.alert("Invalid Phone", "Please enter a valid phone number.");
         return;
@@ -230,7 +267,7 @@ export default function CompleteProfile() {
 
               <View className="flex-row justify-between mt-4">
                 {["MALE", "FEMALE", "OTHER"].map((item) => (
-                  <TouchableOpacity
+                  <Pressable
                     key={item}
                     onPress={() => setGender(item)}
                     className={[
@@ -248,7 +285,7 @@ export default function CompleteProfile() {
                     >
                       {item}
                     </Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 ))}
               </View>
 
@@ -263,7 +300,7 @@ export default function CompleteProfile() {
                 />
               </View>
 
-              <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 mt-4">
+              {/* <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 mt-4">
                 <Ionicons name="location-outline" size={20} color="#64748b" />
                 <TextInput
                   placeholder="State"
@@ -272,7 +309,77 @@ export default function CompleteProfile() {
                   onChangeText={setState}
                   className="ml-3 flex-1 text-base text-slate-900"
                 />
-              </View>
+              </View> */}
+
+              {/* State Selection */}
+              <Pressable
+                onPress={() => setIsStateModalVisible(true)}
+                className="flex-row items-center bg-slate-50 border border-slate-200 rounded-2xl px-4 py-6 mt-4"
+              >
+                <Ionicons name="location-outline" size={20} color="#64748b" />
+                <View className="ml-3 flex-1">
+                  <Text
+                    className={`text-base ${
+                      state ? "text-slate-900" : "text-slate-400"
+                    }`}
+                  >
+                    {state || "Select State"}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-down" size={20} color="#94a3b8" />
+              </Pressable>
+
+              {/* State Picker Modal */}
+              <Modal
+                visible={isStateModalVisible}
+                animationType="fade"
+                transparent={true}
+                onRequestClose={() => setIsStateModalVisible(false)}
+              >
+                <View className="flex-1 justify-center bg-black/50 px-6">
+                  <View className="bg-white rounded-3xl max-h-[70%] overflow-hidden">
+                    <View className="p-4 border-b border-slate-100 items-center">
+                      <Text className="text-lg font-bold text-slate-900">
+                        Select State
+                      </Text>
+                    </View>
+
+                    <KeyboardAwareScrollView>
+                      {INDIAN_STATES.map((item) => (
+                        <Pressable
+                          key={item}
+                          onPress={() => {
+                            setState(item);
+                            setIsStateModalVisible(false);
+                          }}
+                          className={`p-4 border-b border-slate-50 ${
+                            state === item ? "bg-blue-50" : ""
+                          }`}
+                        >
+                          <Text
+                            className={`text-base ${
+                              state === item
+                                ? "text-blue-600 font-semibold"
+                                : "text-slate-700"
+                            }`}
+                          >
+                            {item}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </KeyboardAwareScrollView>
+
+                    <Pressable
+                      onPress={() => setIsStateModalVisible(false)}
+                      className="p-4 items-center bg-slate-100"
+                    >
+                      <Text className="text-slate-600 font-semibold">
+                        Cancel
+                      </Text>
+                    </Pressable>
+                  </View>
+                </View>
+              </Modal>
 
               <View className="mt-4">
                 <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4">
@@ -291,14 +398,14 @@ export default function CompleteProfile() {
                     keyboardType="numeric"
                     maxLength={10}
                   />
-                  <TouchableOpacity
+                  <Pressable
                     onPress={openDatePicker}
                     className="ml-3"
                     accessibilityLabel="Show date picker"
                     accessibilityRole="button"
                   >
                     <Ionicons name="calendar-sharp" size={22} color="#0B5ED7" />
-                  </TouchableOpacity>
+                  </Pressable>
                 </View>
                 {isDatePickerVisible &&
                   DateTimePicker &&
@@ -368,15 +475,14 @@ export default function CompleteProfile() {
           </View>
 
           <View className="mt-8">
-            <TouchableOpacity
-              activeOpacity={0.7}
+            <Pressable
               onPress={handleCompleteProfile}
               className="bg-blue-600 py-4 rounded-2xl items-center shadow-md shadow-blue-200"
             >
               <Text className="text-white font-bold text-lg">
                 Complete Profile
               </Text>
-            </TouchableOpacity>
+            </Pressable>
 
             <Text className="text-slate-400 text-center text-xs mt-4">
               By continuing, you agree to our Terms of Service.
