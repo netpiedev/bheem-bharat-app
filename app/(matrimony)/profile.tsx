@@ -1,40 +1,42 @@
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Image } from "expo-image";
+import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
+import React, { useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Modal,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
+
 import { getUserIdFromToken } from "@/app/lib/jwt";
 import {
   addToWishlist,
-  createProfile,
   getMyProfile,
   getProfileById,
   getWishlist,
   removeFromWishlist,
 } from "@/app/lib/matrimony.api";
-import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
 import { WhiteHeader } from "../components/WhiteHeader";
 
 /* =======================================================
-   PROFILE DETAILS SCREEN
+   PROFILE DETAILS SCREEN (SINGLE FILE)
 ======================================================= */
 export default function ProfileDetailsScreen() {
   const { profileId } = useLocalSearchParams<{ profileId: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [isInWishlist, setIsInWishlist] = useState(false);
 
+  const [isInWishlist, setIsInWishlist] = useState(false);
+  const [viewerVisible, setViewerVisible] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  /* ---------------- DATA ---------------- */
   const {
     data: profile,
     isLoading,
@@ -46,7 +48,7 @@ export default function ProfileDetailsScreen() {
     retry: false,
   });
 
-  const { data: myProfile, isLoading: isLoadingMyProfile } = useQuery({
+  const { data: myProfile, isLoading: loadingMyProfile } = useQuery({
     queryKey: ["matrimony-my-profile"],
     queryFn: getMyProfile,
     retry: false,
@@ -57,20 +59,19 @@ export default function ProfileDetailsScreen() {
     queryFn: async () => {
       const wishlist = await getWishlist();
       if (Array.isArray(wishlist) && profileId) {
-        const found = wishlist.some((item) => item.profile_id === profileId);
-        setIsInWishlist(found);
+        setIsInWishlist(wishlist.some((i) => i.profile_id === profileId));
       }
       return wishlist;
     },
     enabled: !!profileId,
   });
 
+  /* ---------------- MUTATIONS ---------------- */
   const addMutation = useMutation({
     mutationFn: () => addToWishlist(profileId!),
     onSuccess: () => {
       setIsInWishlist(true);
       queryClient.invalidateQueries({ queryKey: ["matrimony-wishlist"] });
-      Alert.alert("Added", "Profile added to wishlist");
     },
   });
 
@@ -79,16 +80,16 @@ export default function ProfileDetailsScreen() {
     onSuccess: () => {
       setIsInWishlist(false);
       queryClient.invalidateQueries({ queryKey: ["matrimony-wishlist"] });
-      Alert.alert("Removed", "Profile removed from wishlist");
     },
   });
 
+  /* ---------------- CHAT ---------------- */
   const handleStartChat = async () => {
     const token = await AsyncStorage.getItem("token");
     if (!token || !profile) return;
 
-    const currentUserId = getUserIdFromToken(token);
-    if (profile.user_id === currentUserId) {
+    const myUserId = getUserIdFromToken(token);
+    if (myUserId === profile.user_id) {
       Alert.alert("Error", "You cannot chat with yourself");
       return;
     }
@@ -102,9 +103,8 @@ export default function ProfileDetailsScreen() {
     });
   };
 
-  const is404 = (error as any)?.response?.status === 404;
-
-  if (isLoading || (isLoadingMyProfile && !profile)) {
+  /* ---------------- STATES ---------------- */
+  if (isLoading || (loadingMyProfile && !profile)) {
     return (
       <View className="flex-1 bg-white">
         <WhiteHeader title="Profile" />
@@ -115,7 +115,7 @@ export default function ProfileDetailsScreen() {
     );
   }
 
-  if ((!profile || is404) && !isLoadingMyProfile && !myProfile) {
+  if (!profile && !loadingMyProfile && !myProfile) {
     return <Redirect href="/(matrimony)/currentUserProfile" />;
   }
 
@@ -130,71 +130,75 @@ export default function ProfileDetailsScreen() {
     );
   }
 
-  // Use user.dob if available, otherwise fall back to profile.dob (for backward compatibility)
-  const dobToUse = profile.user?.dob || profile.dob;
-  const age = dobToUse
-    ? new Date().getFullYear() - new Date(dobToUse).getFullYear()
+  /* ---------------- DERIVED ---------------- */
+  const dob = profile.user?.dob || profile.dob;
+  const age = dob
+    ? new Date().getFullYear() - new Date(dob).getFullYear()
     : null;
 
+  /* =======================================================
+     UI
+  ======================================================= */
   return (
     <View className="flex-1 bg-gray-50">
       <WhiteHeader title="Profile Details" />
+
       <ScrollView contentContainerStyle={{ padding: 20 }}>
-        {/* HERO */}
+        {/* HERO IMAGE */}
         <View className="items-center mb-8">
-          {profile.images && profile.images.length > 0 ? (
-            <Image
-              source={{ 
-                uri: profile.images[0].startsWith("https://") 
-                  ? profile.images[0] 
-                  : `${process.env.EXPO_PUBLIC_S3_URL}/${profile.images[0]}`
+          {profile.images?.length > 0 ? (
+            <Pressable
+              onPress={() => {
+                setSelectedImage(profile.images[0]);
+                setViewerVisible(true);
               }}
-              className="w-28 h-28 rounded-full mb-4"
-              style={{ width: 112, height: 112 }}
-            />
+            >
+              <Image
+                source={profile.images[0]}
+                style={{ width: 120, height: 120, borderRadius: 60 }}
+                contentFit="cover"
+                transition={200}
+              />
+            </Pressable>
           ) : (
-            <View className="w-28 h-28 rounded-full bg-blue-50 items-center justify-center mb-4">
+            <View className="w-28 h-28 rounded-full bg-blue-50 items-center justify-center">
               <Ionicons name="person" size={56} color="#2563EB" />
             </View>
           )}
-          <Text className="text-2xl font-bold">
+
+          <Text className="text-2xl font-bold mt-4">
             {profile.user.name || "Anonymous"}
           </Text>
-          <Text className="text-gray-600 mt-1">
-            {age ? `${age} yrs` : "Age N/A"} • {profile.gender}
-          </Text>
 
-          {profile.is_verified && (
-            <View className="flex-row items-center mt-3 bg-green-50 px-4 py-1.5 rounded-full">
-              <Ionicons name="checkmark-circle" size={16} color="#10B981" />
-              <Text className="text-green-700 text-xs ml-2 font-semibold">
-                Verified Profile
-              </Text>
-            </View>
+          {age && (
+            <Text className="text-gray-600 mt-1">
+              {age} yrs • {profile.gender}
+            </Text>
           )}
         </View>
 
-        {/* Images Gallery */}
-        {profile.images && profile.images.length > 0 && (
+        {/* GALLERY */}
+        {profile.images?.length > 0 && (
           <View className="mb-6">
-            <Text className="text-lg font-bold text-gray-900 mb-3">
-              Photos
-            </Text>
+            <Text className="text-lg font-bold mb-3">Photos</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View className="flex-row">
-                {profile.images.map((img, index) => (
+              {profile.images.map((img, index) => (
+                <Pressable
+                  key={index}
+                  onPress={() => {
+                    setSelectedImage(img);
+                    setViewerVisible(true);
+                  }}
+                  className="mr-3"
+                >
                   <Image
-                    key={index}
-                    source={{ 
-                      uri: img.startsWith("https://") 
-                        ? img 
-                        : `${process.env.EXPO_PUBLIC_S3_URL}/${img}`
-                    }}
-                    className="w-32 h-32 rounded-xl mr-3"
-                    style={{ width: 128, height: 128 }}
+                    source={img}
+                    style={{ width: 130, height: 130, borderRadius: 16 }}
+                    contentFit="cover"
+                    transition={200}
                   />
-                ))}
-              </View>
+                </Pressable>
+              ))}
             </ScrollView>
           </View>
         )}
@@ -234,64 +238,95 @@ export default function ProfileDetailsScreen() {
           </Pressable>
         </View>
 
-        {/* DETAILS */}
+        {/* PERSONAL */}
         <InfoCard title="Personal Details">
           {age && (
-            <DetailRow icon="calendar-outline" label="Age" value={`${age}`} />
+            <Detail label="Age" value={`${age}`} icon="calendar-outline" />
+          )}
+          {profile.height && (
+            <Detail
+              label="Height"
+              value={`${profile.height} cm`}
+              icon="resize-outline"
+            />
           )}
           {profile.city && (
-            <DetailRow
-              icon="location-outline"
-              label="City"
-              value={profile.city}
-            />
+            <Detail label="City" value={profile.city} icon="location-outline" />
+          )}
+          {profile.state && (
+            <Detail label="State" value={profile.state} icon="map-outline" />
           )}
           {profile.religion && (
-            <DetailRow
-              icon="book-outline"
+            <Detail
               label="Religion"
               value={profile.religion}
+              icon="book-outline"
             />
+          )}
+          {profile.caste && (
+            <Detail label="Caste" value={profile.caste} icon="people-outline" />
           )}
         </InfoCard>
 
+        {/* PROFESSIONAL */}
         <InfoCard title="Professional Details">
           {profile.education && (
-            <DetailRow
-              icon="school-outline"
+            <Detail
               label="Education"
               value={profile.education}
+              icon="school-outline"
             />
           )}
           {profile.profession && (
-            <DetailRow
-              icon="briefcase-outline"
+            <Detail
               label="Profession"
               value={profile.profession}
+              icon="briefcase-outline"
             />
           )}
           {profile.income && (
-            <DetailRow
-              icon="cash-outline"
-              label="Income"
-              value={profile.income}
-            />
+            <Detail label="Income" value={profile.income} icon="cash-outline" />
           )}
         </InfoCard>
 
+        {/* ABOUT */}
         {profile.about_me_text && (
-          <View className="bg-blue-50 rounded-2xl p-5">
-            <Text className="text-lg font-bold mb-2">About Me</Text>
-            <Text className="text-gray-700 leading-6">{profile.about_me_text}</Text>
-          </View>
+          <InfoCard title="About Me">
+            <Text className="text-gray-700 leading-6">
+              {profile.about_me_text}
+            </Text>
+          </InfoCard>
         )}
       </ScrollView>
+
+      {/* FULL SCREEN IMAGE VIEWER */}
+      <Modal visible={viewerVisible} transparent animationType="fade">
+        <View className="flex-1 bg-black">
+          <Pressable
+            onPress={() => {
+              setViewerVisible(false);
+              setSelectedImage(null);
+            }}
+            className="absolute top-12 right-6 z-10"
+          >
+            <Ionicons name="close" size={32} color="white" />
+          </Pressable>
+
+          {selectedImage && (
+            <Image
+              source={selectedImage}
+              style={{ flex: 1 }}
+              contentFit="contain"
+            />
+          )}
+        </View>
+      </Modal>
     </View>
   );
 }
 
 /* =======================================================
-   SHARED UI COMPONENTS
+   UI HELPERS
 ======================================================= */
 function InfoCard({
   title,
@@ -308,14 +343,14 @@ function InfoCard({
   );
 }
 
-function DetailRow({
-  icon,
+function Detail({
   label,
   value,
+  icon,
 }: {
-  icon: string;
   label: string;
   value: string;
+  icon: string;
 }) {
   return (
     <View className="flex-row items-center mb-3">
@@ -325,4 +360,3 @@ function DetailRow({
     </View>
   );
 }
-

@@ -1,18 +1,24 @@
-import { getProfiles } from "@/app/lib/matrimony.api";
-import type { MatrimonyProfileWithUser } from "@/app/types/matrimony.types";
 import { Ionicons } from "@expo/vector-icons";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
-  Image,
   Pressable,
   Text,
   TextInput,
   View,
 } from "react-native";
+
+import {
+  addToWishlist,
+  getProfiles,
+  getWishlist,
+  removeFromWishlist,
+} from "@/app/lib/matrimony.api";
+import type { MatrimonyProfileWithUser } from "@/app/types/matrimony.types";
 import { WhiteHeader } from "../components/WhiteHeader";
 
 /* ------------------ AVATARS ------------------ */
@@ -22,48 +28,85 @@ const FEMALE_AVATAR =
 const MALE_AVATAR =
   "https://static.vecteezy.com/system/resources/previews/036/594/092/non_2x/man-empty-avatar-photo-placeholder-for-social-networks-resumes-forums-and-dating-sites-male-and-female-no-photo-images-for-unfilled-user-profile-free-vector.jpg";
 
-const getImageUrl = (imageKey: string) => {
-  if (imageKey.startsWith("https://")) {
-    return imageKey;
-  }
-  return `${process.env.EXPO_PUBLIC_S3_URL}/${imageKey}`;
+const getProfileImage = (profile: MatrimonyProfileWithUser) => {
+  if (profile.images?.length) return profile.images[0];
+  if (profile.user?.photo) return profile.user.photo;
+  return profile.gender === "FEMALE" ? FEMALE_AVATAR : MALE_AVATAR;
 };
 
-const getProfileImage = (profile: MatrimonyProfileWithUser) => {
-  // First try to get from profile images array
-  if (profile.images && profile.images.length > 0) {
-    return getImageUrl(profile.images[0]);
-  }
-  // Fallback to user photo
-  if (profile.user?.photo) return profile.user.photo;
-  // Final fallback to gender-based placeholder
-  return profile.gender === "FEMALE" ? FEMALE_AVATAR : MALE_AVATAR;
+const getAge = (p: MatrimonyProfileWithUser) => {
+  const dob = p.user?.dob || p.dob;
+  if (!dob) return null;
+  return new Date().getFullYear() - new Date(dob).getFullYear();
 };
 
 export default function BrowseProfilesScreen() {
   const router = useRouter();
-  const [page, setPage] = useState(1);
-  const [genderFilter, setGenderFilter] = useState<string>("");
-  const [cityFilter, setCityFilter] = useState<string>("");
-  const limit = 20;
+  const queryClient = useQueryClient();
 
+  const [page, setPage] = useState(1);
+  const [gender, setGender] = useState<"" | "MALE" | "FEMALE">("");
+  const [city, setCity] = useState("");
+  const [debouncedCity, setDebouncedCity] = useState("");
+  const [wishlistIds, setWishlistIds] = useState<Set<string>>(new Set());
+
+  /* ---------------- DEBOUNCE CITY (500ms) ---------------- */
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedCity(city.trim());
+      setPage(1);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [city]);
+
+  /* ---------------- PROFILES ---------------- */
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["matrimony-profiles", page, genderFilter, cityFilter],
+    queryKey: ["matrimony-profiles", page, gender, debouncedCity],
     queryFn: () =>
       getProfiles({
         page,
-        limit,
-        gender: genderFilter || undefined,
-        city: cityFilter || undefined,
+        limit: 20,
+        gender: gender || undefined,
+        city: debouncedCity || undefined,
       }),
+    keepPreviousData: true,
+    initialData: { data: [], total: 0 },
   });
 
-  const renderProfile = ({ item }: { item: MatrimonyProfileWithUser }) => {
-    // Use user.dob if available, otherwise fall back to profile.dob (for backward compatibility)
-    const dobToUse = item.user?.dob || item.dob;
-    const age = dobToUse
-      ? new Date().getFullYear() - new Date(dobToUse).getFullYear()
-      : null;
+  /* ---------------- WISHLIST ---------------- */
+  useQuery({
+    queryKey: ["matrimony-wishlist"],
+    queryFn: async () => {
+      const list = await getWishlist();
+      setWishlistIds(new Set(list.map((i) => i.profile_id)));
+      return list;
+    },
+  });
+
+  const addMutation = useMutation({
+    mutationFn: addToWishlist,
+    onSuccess: (_, profileId) => {
+      setWishlistIds((prev) => new Set(prev).add(profileId));
+      queryClient.invalidateQueries({ queryKey: ["matrimony-wishlist"] });
+    },
+  });
+
+  const removeMutation = useMutation({
+    mutationFn: removeFromWishlist,
+    onSuccess: (_, profileId) => {
+      setWishlistIds((prev) => {
+        const s = new Set(prev);
+        s.delete(profileId);
+        return s;
+      });
+      queryClient.invalidateQueries({ queryKey: ["matrimony-wishlist"] });
+    },
+  });
+
+  /* ---------------- CARD ---------------- */
+  const renderItem = ({ item }: { item: MatrimonyProfileWithUser }) => {
+    const age = getAge(item);
+    const isWishlisted = wishlistIds.has(item.id);
 
     return (
       <Pressable
@@ -73,59 +116,77 @@ export default function BrowseProfilesScreen() {
             params: { profileId: item.id },
           })
         }
-        className="bg-white rounded-2xl p-4 mb-4 border border-gray-100"
+        className="flex-1 m-2 bg-white rounded-2xl overflow-hidden shadow-sm"
       >
-        <View className="flex-row">
-          {/* Avatar */}
-          <Image
-            source={{ uri: getProfileImage(item) }}
-            className="w-20 h-20 rounded-xl mr-4"
-          />
+        {/* IMAGE */}
+        <Image
+          source={getProfileImage(item)}
+          style={{ width: "100%", height: 180 }}
+          contentFit="cover"
+        />
 
-          {/* Info */}
-          <View className="flex-1">
-            <View className="flex-row justify-between items-start">
-              <Text className="text-lg font-bold text-gray-900">
-                {item.user.name || "Anonymous"}
-                {age ? `, ${age}` : ""}
+        {/* CONTENT */}
+        <View className="p-3">
+          <View className="flex-row items-center justify-between">
+            <Text className="font-bold text-gray-900">
+              {item.user.name || "Anonymous"}
+              {age ? `, ${age}` : ""}
+            </Text>
+            <Ionicons name="star" size={16} color="#FACC15" />
+          </View>
+
+          {item.profession && (
+            <Text className="text-xs text-gray-500 mt-1">
+              {item.profession}
+            </Text>
+          )}
+
+          {item.city && (
+            <Text className="text-xs text-gray-400 mt-1">
+              <Ionicons name="location-outline" size={12} /> {item.city}
+            </Text>
+          )}
+
+          {/* ACTIONS */}
+          <View className="mt-3 flex-row items-center justify-between">
+            {/* VIEW */}
+            <Pressable
+              onPress={() =>
+                router.push({
+                  pathname: "/(matrimony)/profile",
+                  params: { profileId: item.id },
+                })
+              }
+              className="px-3 py-1.5 bg-blue-50 rounded-lg"
+            >
+              <Text className="text-blue-600 font-semibold text-sm">
+                View →
               </Text>
-              <Ionicons name="star" size={18} color="#FACC15" />
-            </View>
+            </Pressable>
 
-            <Text className="text-sm text-gray-600 mt-1">{item.gender}</Text>
-
-            {item.city && (
-              <Text className="text-sm text-gray-500 mt-1">
-                <Ionicons name="location-outline" size={14} /> {item.city}
-              </Text>
-            )}
-
-            {item.profession && (
-              <Text className="text-sm text-gray-500 mt-1">
-                <Ionicons name="briefcase-outline" size={14} />{" "}
-                {item.profession}
-              </Text>
-            )}
-
-            {/* Actions */}
-            <View className="flex-row mt-3">
-              <View className="flex-1 bg-blue-600 py-2 rounded-lg mr-2">
-                <Text className="text-white text-center font-semibold">
-                  View Profile
-                </Text>
-              </View>
-
-              <View className="w-10 h-10 border border-gray-200 rounded-lg items-center justify-center">
-                <Ionicons name="heart-outline" size={20} color="#2563EB" />
-              </View>
-            </View>
+            {/* WISHLIST (ALWAYS RED WHEN ADDED) */}
+            <Pressable
+              onPress={(e) => {
+                e.stopPropagation();
+                isWishlisted
+                  ? removeMutation.mutate(item.id)
+                  : addMutation.mutate(item.id);
+              }}
+              className="w-9 h-9 rounded-full items-center justify-center bg-gray-100"
+            >
+              <Ionicons
+                name={isWishlisted ? "heart" : "heart-outline"}
+                size={20}
+                color={isWishlisted ? "#EF4444" : "#EF4444"}
+              />
+            </Pressable>
           </View>
         </View>
       </Pressable>
     );
   };
 
-  /* ------------------ LOADING ------------------ */
+  /* ---------------- LOADING / ERROR ---------------- */
   if (isLoading && !data) {
     return (
       <View className="flex-1 bg-gray-50">
@@ -137,13 +198,12 @@ export default function BrowseProfilesScreen() {
     );
   }
 
-  /* ------------------ ERROR ------------------ */
   if (isError) {
     return (
       <View className="flex-1 bg-gray-50">
         <WhiteHeader title="All Profiles" />
-        <View className="flex-1 items-center justify-center p-5">
-          <Text className="text-red-500 mb-4">Failed to load profiles</Text>
+        <View className="flex-1 items-center justify-center">
+          <Text className="text-red-500 mb-3">Failed to load profiles</Text>
           <Pressable
             onPress={() => refetch()}
             className="bg-blue-600 px-6 py-3 rounded-lg"
@@ -161,19 +221,18 @@ export default function BrowseProfilesScreen() {
 
       {/* FILTER BAR */}
       <View className="bg-white px-4 py-3 border-b border-gray-200">
-        {/* Gender Toggle */}
         <View className="flex-row bg-gray-100 rounded-xl p-1 mb-3">
           {["", "MALE", "FEMALE"].map((g) => (
             <Pressable
               key={g}
-              onPress={() => setGenderFilter(g)}
+              onPress={() => setGender(g as any)}
               className={`flex-1 py-2 rounded-lg ${
-                genderFilter === g ? "bg-white" : ""
+                gender === g ? "bg-white" : ""
               }`}
             >
               <Text
                 className={`text-center font-semibold ${
-                  genderFilter === g ? "text-blue-600" : "text-gray-500"
+                  gender === g ? "text-blue-600" : "text-gray-500"
                 }`}
               >
                 {g === "" ? "All" : g === "MALE" ? "Groom" : "Bride"}
@@ -182,36 +241,30 @@ export default function BrowseProfilesScreen() {
           ))}
         </View>
 
-        {/* City Search */}
         <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-2">
           <Ionicons name="search" size={16} color="#9CA3AF" />
           <TextInput
-            placeholder="Search by city..."
-            value={cityFilter}
-            onChangeText={setCityFilter}
-            className="ml-3 flex-1 placeholder:text-gray-400"
+            placeholder="Search by city"
+            value={city}
+            onChangeText={setCity}
+            className="ml-3 flex-1"
           />
         </View>
       </View>
 
-      {/* LIST */}
+      {/* GRID LIST */}
       <FlatList
         data={data?.data || []}
-        renderItem={renderProfile}
+        renderItem={renderItem}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ padding: 16 }}
-        ListEmptyComponent={
-          <View className="items-center justify-center py-20">
-            <Ionicons name="people-outline" size={64} color="#9CA3AF" />
-            <Text className="text-gray-500 mt-4">No profiles found</Text>
-          </View>
-        }
+        numColumns={2}
+        contentContainerStyle={{ padding: 8 }}
         onEndReached={() => {
           if (data && data.data.length < data.total) {
             setPage((p) => p + 1);
           }
         }}
-        onEndReachedThreshold={0.5}
+        onEndReachedThreshold={0.4}
       />
     </View>
   );

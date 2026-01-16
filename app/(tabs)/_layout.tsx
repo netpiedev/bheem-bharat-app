@@ -17,7 +17,7 @@ export default function TabsLayout() {
         name="matrimony"
         options={{
           title: "Matrimony",
-          headerShown: true,
+          headerShown: false,
           tabBarIcon: ({ color }) => (
             <Ionicons name="heart-outline" size={22} color={color} />
           ),
