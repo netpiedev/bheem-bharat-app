@@ -13,8 +13,8 @@ import {
   View,
 } from "react-native";
 
-import { getMyProfile, getProfiles } from "@/app/lib/matrimony.api";
 import { useLanguage } from "@/app/lib/LanguageContext";
+import { getMyProfile, getProfiles } from "@/app/lib/matrimony.api";
 import type { MatrimonyProfileWithUser } from "@/app/types/matrimony.types";
 
 /* ------------------ FALLBACK AVATARS ------------------ */
@@ -148,7 +148,7 @@ export default function MatrimonyTab() {
       )}
 
       {/* QUICK ACTIONS */}
-      <View className="mx-5 mt-6 flex-row justify-between">
+      <View className="mx-5 my-6 flex-row justify-between">
         <QuickCard
           icon="people-outline"
           title={t("matrimony_browse")}
@@ -168,7 +168,7 @@ export default function MatrimonyTab() {
 
       {/* CREATE PROFILE CTA */}
       {!myProfile && (
-        <View className="mx-5 mt-8 bg-blue-600 rounded-2xl p-6">
+        <View className="mx-5 mb-8 bg-blue-600 rounded-2xl p-6">
           <Text className="text-white text-xl font-bold mb-1">
             {t("matrimony_create_profile")}
           </Text>
@@ -198,7 +198,9 @@ function SectionHeader({ title, onPress }: any) {
     <View className="mx-5 mt-8 mb-3 flex-row justify-between items-center">
       <Text className="text-lg font-bold text-gray-900">{title}</Text>
       <TouchableOpacity onPress={onPress}>
-        <Text className="text-blue-600 font-medium">{t("matrimony_view_all")}</Text>
+        <Text className="text-blue-600 font-medium">
+          {t("matrimony_view_all")}
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -233,7 +235,9 @@ function ProfileCard({ profile, onPress }: any) {
         </Text>
 
         <View className="mt-3 bg-white py-2 rounded-xl items-center">
-          <Text className="font-semibold text-gray-900">{t("matrimony_view_profile")}</Text>
+          <Text className="font-semibold text-gray-900">
+            {t("matrimony_view_profile")}
+          </Text>
         </View>
       </View>
     </TouchableOpacity>
