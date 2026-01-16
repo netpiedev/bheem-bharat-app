@@ -39,8 +39,8 @@ export default {
   profile_notifications: "सूचना",
   profile_notifications_sub: "सूचना प्राधान्ये व्यवस्थापित करा",
 
-  profile_privacy: "गोपनीयता आणि सुरक्षा",
-  profile_privacy_sub: "तुमच्या गोपनीयता सेटिंग्स नियंत्रित करा",
+  profile_privacy: "गोपनीयता धोरण",
+  profile_privacy_sub: "तुमचा डेटा आणि दृश्यमानता प्राधान्ये व्यवस्थापित करा",
 
   profile_language: "भाषा",
 

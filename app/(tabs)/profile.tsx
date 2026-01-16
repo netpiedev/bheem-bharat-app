@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
 import React from "react";
 import {
   ActivityIndicator,
@@ -120,34 +121,26 @@ export default function Profile() {
       onPress: () => router.push("/(matrimony)/currentUserProfile" as any),
     },
     {
-      id: 2,
-      title: t("profile_posts"),
-      subtitle: `12 ${t("profile_posts_sub")}`,
-      icon: "chatbubble-ellipses-outline",
-    },
-    {
-      id: 3,
-      title: t("profile_notifications"),
-      subtitle: t("profile_notifications_sub"),
-      icon: "notifications-outline",
-    },
-    {
       id: 4,
       title: t("profile_privacy"),
       subtitle: t("profile_privacy_sub"),
       icon: "shield-checkmark-outline",
+      onPress: () =>
+        WebBrowser.openBrowserAsync("https://legal.bheembharat.com"),
     },
     {
       id: 5,
       title: t("profile_language"),
       subtitle: t(`profile_lang_${lang}`),
       icon: "globe-outline",
+      onPress: () => cycleLanguage(),
     },
     {
       id: 6,
       title: t("profile_help"),
       subtitle: t("profile_help_sub"),
       icon: "help-circle-outline",
+      onPress: () => router.push("/help" as any),
     },
   ];
 
@@ -158,18 +151,6 @@ export default function Profile() {
     setLang(next);
   };
 
-  // Format mobile number for display (Indian format mask)
-  function maskMobile(mobile: string) {
-    if (!mobile) return "";
-    if (mobile.length === 10) {
-      return "+91 " + mobile.substr(0, 2) + "XXXXXX" + mobile.substr(8, 2);
-    }
-    if (mobile.length > 4) {
-      return "+91 " + mobile.substr(0, 2) + "XXXXXX" + mobile.substr(-2);
-    }
-    return "+91 XXXXXXXXXX";
-  }
-
   return (
     <View key={lang} className="flex-1 bg-[#F9FAFB]">
       {/* Header */}
@@ -179,9 +160,6 @@ export default function Profile() {
             <Text className="text-white text-2xl font-semibold">
               {t("profile_title")}
             </Text>
-            {/* <Pressable className="bg-white/20 p-2.5 rounded-full">
-              <Ionicons name="settings-outline" size={22} color="white" />
-            </Pressable> */}
           </View>
         </SafeAreaView>
       </View>
@@ -194,14 +172,18 @@ export default function Profile() {
       >
         {/* Profile Card */}
         <View className="bg-white rounded-3xl p-6 shadow-sm mb-6">
-          <View className="flex-row items-start mb-6">
+          <View className="flex-row items-start">
             <View className="w-20 h-20 rounded-full bg-[#0B5ED7] items-center justify-center mr-4">
               <Ionicons name="person" size={40} color="white" />
             </View>
 
-            <View className="flex-1 pt-2">
+            <View className="flex-1 pt-1">
               {isLoading ? (
-                <ActivityIndicator size="small" color="#0B5ED7" />
+                <ActivityIndicator
+                  size="small"
+                  color="#0B5ED7"
+                  className="self-start mt-2"
+                />
               ) : isError ? (
                 <View>
                   <Text className="text-red-500 text-sm">
@@ -209,9 +191,11 @@ export default function Profile() {
                   </Text>
                   <Pressable
                     onPress={() => refetch()}
-                    className="mt-2 bg-blue-100 px-3 py-1 rounded"
+                    className="mt-2 bg-blue-50 px-3 py-1 rounded-lg self-start"
                   >
-                    <Text className="text-blue-600 text-xs">Retry</Text>
+                    <Text className="text-blue-600 text-xs font-medium">
+                      Retry
+                    </Text>
                   </Pressable>
                 </View>
               ) : (
@@ -222,81 +206,60 @@ export default function Profile() {
                   >
                     {user?.name || t("profile_name") || "User"}
                   </Text>
-                  {user?.phone ? (
-                    <Text className="text-gray-500 text-sm mt-1">
-                      {maskMobile(user.phone)}
-                    </Text>
-                  ) : (
-                    <Text className="text-gray-500 text-sm mt-1">
-                      +91 XXXXXXXXXX
+
+                  {/* Phone Number - Only shows if available, no masking */}
+                  {user?.phone && (
+                    <Text className="text-gray-600 text-[15px] mt-0.5">
+                      +91 {user.phone}
                     </Text>
                   )}
 
-                  {user?.city ? (
-                    <Text className="text-gray-400 text-sm" numberOfLines={1}>
-                      {user.city}
-                    </Text>
-                  ) : (
-                    <Text className="text-gray-400 text-sm">
-                      {t("profile_city") || "City not set"}
-                    </Text>
+                  {/* Location Info */}
+                  {(user?.city || user?.state) && (
+                    <View className="flex-row items-center mt-1">
+                      <Ionicons
+                        name="location-outline"
+                        size={14}
+                        color="#9CA3AF"
+                      />
+                      <Text
+                        className="text-gray-500 text-sm ml-1"
+                        numberOfLines={1}
+                      >
+                        {user?.city}
+                        {user?.city && user?.state ? ", " : ""}
+                        {user?.state}
+                      </Text>
+                    </View>
                   )}
 
-                  {user?.state ? (
-                    <Text className="text-gray-400 text-sm" numberOfLines={1}>
-                      {user.state}
-                    </Text>
-                  ) : (
-                    <Text className="text-gray-400 text-sm">
-                      {t("profile_state") || "State not set"}
-                    </Text>
-                  )}
-
-                  {user?.dob && (
-                    <Text className="text-gray-400 text-xs mt-1">
-                      {t("profile_dob_label") || "DOB"}: {formatDate(user.dob)}
-                    </Text>
-                  )}
-                  {user?.gender && (
-                    <Text className="text-gray-400 text-xs mt-0.5">
-                      {t("profile_gender_label") || "Gender"}: {user.gender}
-                    </Text>
-                  )}
+                  {/* Personal Details Badges */}
+                  <View className="flex-row flex-wrap mt-2 gap-2">
+                    {user?.gender && (
+                      <View className="bg-gray-100 px-2 py-0.5 rounded-md">
+                        <Text className="text-gray-500 text-[11px] font-medium uppercase">
+                          {user.gender}
+                        </Text>
+                      </View>
+                    )}
+                    {user?.dob && (
+                      <View className="bg-gray-100 px-2 py-0.5 rounded-md">
+                        <Text className="text-gray-500 text-[11px] font-medium uppercase">
+                          {formatDate(user.dob)}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
                 </>
               )}
             </View>
 
             <Pressable
               onPress={() => router.push("/(auth)/profile")}
-              className="bg-gray-100 p-2.5 rounded-xl mt-2"
+              className="bg-gray-50 p-2.5 rounded-xl border border-gray-100"
             >
               <Ionicons name="create-outline" size={20} color="#374151" />
             </Pressable>
-          </View>
-
-          <View className="h-[1px] bg-gray-100 w-full mb-4" />
-
-          <View className="flex-row justify-between px-4">
-            <View className="items-center">
-              <Text className="text-[#0B5ED7] font-bold text-xl">5</Text>
-              <Text className="text-gray-500 text-xs font-medium">
-                {t("profile_connections")}
-              </Text>
-            </View>
-            <View className="w-[1px] bg-gray-100" />
-            <View className="items-center">
-              <Text className="text-[#0B5ED7] font-bold text-xl">12</Text>
-              <Text className="text-gray-500 text-xs font-medium">
-                {t("profile_posts_label")}
-              </Text>
-            </View>
-            <View className="w-[1px] bg-gray-100" />
-            <View className="items-center">
-              <Text className="text-[#0B5ED7] font-bold text-xl">3</Text>
-              <Text className="text-gray-500 text-xs font-medium">
-                {t("profile_groups")}
-              </Text>
-            </View>
           </View>
         </View>
 
@@ -304,14 +267,8 @@ export default function Profile() {
         {MENU_ITEMS.map((item) => (
           <Pressable
             key={item.id}
-            onPress={() => {
-              if (item.id === 5) {
-                cycleLanguage();
-              } else if (item.onPress) {
-                item.onPress();
-              }
-            }}
-            className="bg-white rounded-2xl p-4 mb-3 flex-row items-center border border-gray-100 shadow-sm"
+            onPress={item.onPress}
+            className="bg-white rounded-2xl p-4 mb-3 flex-row items-center border border-gray-100 shadow-sm active:opacity-70"
           >
             <View className="w-12 h-12 rounded-2xl bg-[#EFF6FF] items-center justify-center mr-4">
               <Ionicons name={item.icon as any} size={24} color="#0B5ED7" />
@@ -341,6 +298,7 @@ export default function Profile() {
           </Text>
         </Pressable>
 
+        {/* Delete account */}
         <Pressable
           onPress={handleDeleteAccount}
           className="mt-2 flex-row items-center justify-center p-4 rounded-2xl border border-gray-200 bg-white active:bg-gray-50"

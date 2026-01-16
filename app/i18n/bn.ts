@@ -39,8 +39,8 @@ export default {
   profile_notifications: "নোটিফিকেশন",
   profile_notifications_sub: "নোটিফিকেশন সেটিংস পরিচালনা করুন",
 
-  profile_privacy: "গোপনীয়তা ও নিরাপত্তা",
-  profile_privacy_sub: "আপনার গোপনীয়তা সেটিংস নিয়ন্ত্রণ করুন",
+  profile_privacy: "গোপনীয়তা নীতি",
+  profile_privacy_sub: "আপনার ডেটা এবং দৃশ্যমানতা পছন্দগুলি পরিচালনা করুন",
 
   profile_language: "ভাষা",
 
@@ -57,7 +57,7 @@ export default {
   profile_lang_hi: "হিন্দি",
   profile_lang_mr: "মারাঠি",
   profile_lang_bn: "বাংলা",
-    
+
   profile_logout_confirm: "আপনি কি নিশ্চিত যে আপনি লগ আউট করতে চান?",
   profile_logout_confirm_yes: "হ্যাঁ",
   profile_logout_confirm_no: "না",
