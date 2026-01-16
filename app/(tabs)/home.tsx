@@ -2,11 +2,12 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   FlatList,
   Image,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   TouchableOpacity,
@@ -22,6 +23,7 @@ import { fetchOrganizations } from "@/app/lib/organizations.api";
 
 export default function HomeScreen() {
   const router = useRouter();
+  const [refreshing, setRefreshing] = useState(false);
   const [selectedState, setSelectedState] = useState<string | undefined>(
     undefined
   );
@@ -41,30 +43,52 @@ export default function HomeScreen() {
   };
 
   // React Query - Key includes selectedState so it refetches when state changes
-  const { data: organizations } = useQuery({
+  const { data: organizations, refetch: refetchOrgs } = useQuery({
     queryKey: ["organizations-home", selectedState],
     queryFn: () => fetchOrganizations({ state: selectedState }),
-    enabled: !!selectedState, // Only run once we have a state
+    enabled: !!selectedState,
   });
 
-  const { data: hostels } = useQuery({
+  const { data: hostels, refetch: refetchHostels } = useQuery({
     queryKey: ["hostels-home", selectedState],
     queryFn: () => fetchHostels({ state: selectedState }),
     enabled: !!selectedState,
   });
 
-  const { data: articles } = useQuery({
+  const { data: articles, refetch: refetchArticles } = useQuery({
     queryKey: ["articles-home"],
     queryFn: () => fetchArticles(1, 5),
   });
 
-  const { data: myProfile } = useQuery({
+  const { data: myProfile, refetch: refetchProfile } = useQuery({
     queryKey: ["matrimony-my-profile"],
     queryFn: () => getMyProfile(),
   });
 
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    // Execute all refetches in parallel
+    await Promise.all([
+      refetchOrgs(),
+      refetchHostels(),
+      refetchArticles(),
+      refetchProfile(),
+    ]);
+    setRefreshing(false);
+  }, [refetchOrgs, refetchHostels, refetchArticles, refetchProfile]);
+
   return (
-    <ScrollView className="flex-1 bg-white">
+    <ScrollView
+      className="flex-1 bg-white"
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={["#0B5ED7"]} // Android color
+          tintColor="#0B5ED7" // iOS color
+        />
+      }
+    >
       {/* Pass the handleStateChange to Header so it can trigger a refresh */}
       <Header onStateSelected={handleStateChange} />
 
@@ -94,61 +118,8 @@ export default function HomeScreen() {
           }
           className="bg-white self-start px-6 py-3 rounded-lg"
         >
-          <Text className="text-[#014BB4]">Explore Now</Text>
+          <Text className="text-[#014BB4] font-medium">Explore Now</Text>
         </Pressable>
-      </View>
-
-      {/* News & Articles */}
-      <HorizontalSection
-        title="News & Articles"
-        route="/resources/articles"
-        icon="newspaper-outline"
-        data={articles?.data || []}
-        renderItem={(item) => (
-          <Pressable
-            onPress={() =>
-              router.push({
-                pathname: "/(articlesscreen)/detailedarticlesscreenPage",
-                params: { id: item.id },
-              })
-            }
-            className="w-64 mr-4 p-4 rounded-2xl bg-indigo-500 min-h-[140px] justify-between"
-          >
-            <View>
-              <Text className="text-white/70 text-xs font-bold uppercase">
-                {item.category}
-              </Text>
-              <Text
-                className="text-white font-bold text-base mt-1"
-                numberOfLines={2}
-              >
-                {item.title}
-              </Text>
-            </View>
-            <TouchableOpacity className="bg-white/20 self-start px-3 py-1 rounded-md">
-              <Text className="text-white text-xs">Read More</Text>
-            </TouchableOpacity>
-          </Pressable>
-        )}
-      />
-
-      {/* Stats Section */}
-      <View className="flex-row justify-between px-5 my-6">
-        {[
-          { label: "Profiles", val: "5,000+", icon: "people" },
-          { label: "Cities", val: "50+", icon: "location" },
-          { label: "Stories", val: "500+", icon: "ribbon" },
-        ].map((stat, i) => (
-          <View
-            key={i}
-            className="bg-[#F5FAFF] p-4 rounded-2xl items-center w-[30%] border border-blue-100"
-          >
-            <Text className="text-blue-600 font-bold text-lg mb-1">
-              {stat.val}
-            </Text>
-            <Text className="text-gray-600 text-xs">{stat.label}</Text>
-          </View>
-        ))}
       </View>
 
       {/* Hostels Section (Filtered) */}
@@ -203,6 +174,59 @@ export default function HomeScreen() {
                 </Text>
               </View>
             </View>
+          </Pressable>
+        )}
+      />
+
+      {/* Stats Section */}
+      <View className="flex-row justify-between px-5 my-6">
+        {[
+          { label: "Profiles", val: "5,000+", icon: "people" },
+          { label: "Cities", val: "50+", icon: "location" },
+          { label: "Stories", val: "500+", icon: "ribbon" },
+        ].map((stat, i) => (
+          <View
+            key={i}
+            className="bg-[#F5FAFF] p-4 rounded-2xl items-center w-[30%] border border-blue-100"
+          >
+            <Text className="text-blue-600 font-bold text-lg mb-1">
+              {stat.val}
+            </Text>
+            <Text className="text-gray-600 text-xs">{stat.label}</Text>
+          </View>
+        ))}
+      </View>
+
+      {/* News & Articles */}
+      <HorizontalSection
+        title="News & Articles"
+        route="/resources/articles"
+        icon="newspaper-outline"
+        data={articles?.data || []}
+        renderItem={(item) => (
+          <Pressable
+            onPress={() =>
+              router.push({
+                pathname: "/(articlesscreen)/detailedarticlesscreenPage",
+                params: { id: item.id },
+              })
+            }
+            className="w-64 mr-4 p-4 rounded-2xl bg-blue-600 min-h-[140px] justify-between"
+          >
+            <View>
+              <Text className="text-white/70 text-xs font-bold uppercase">
+                {item.category}
+              </Text>
+              <Text
+                className="text-white font-bold text-base mt-1"
+                numberOfLines={2}
+              >
+                {item.title}
+              </Text>
+            </View>
+            <TouchableOpacity className="bg-white/20 self-start px-3 py-1 rounded-md">
+              <Text className="text-white text-xs">Read More</Text>
+            </TouchableOpacity>
           </Pressable>
         )}
       />

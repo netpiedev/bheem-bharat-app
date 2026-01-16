@@ -3,7 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { FlatList, Modal, Pressable, Text, View } from "react-native";
+import { FlatList, Image, Modal, Pressable, Text, View } from "react-native";
 
 const INDIAN_STATES = [
   "Andaman and Nicobar Islands",
@@ -111,14 +111,17 @@ export default function Header({ onStateSelected }: HeaderProps) {
           </Pressable>
         </View>
 
-        {/* <Pressable
-          onPress={handleLogout}
-          className="bg-white/20 p-2 rounded-full"
-        >
-          <Ionicons name="log-out-outline" size={24} color="white" />
-        </Pressable> */}
+        {/* Replaced Logout with Logo */}
+        <View className="">
+          <Image
+            source={require("@/assets/images/icon-previous.png")}
+            className="w-16 h-16"
+            resizeMode="contain"
+          />
+        </View>
       </View>
 
+      {/* Search Bar */}
       <View className="bg-white flex-row items-center px-4 py-4 rounded-xl">
         <Ionicons name="search" size={20} color="gray" />
         <Text className="text-gray-400 ml-2">
