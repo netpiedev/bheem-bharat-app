@@ -130,12 +130,12 @@ export default function HomeScreen() {
         data={hostels?.data || []}
         renderItem={(item) => (
           <Pressable
-            onPress={() =>
+            onPress={() => {
               router.push({
                 pathname: "/(hostelscreens)/detailedHostelPage",
                 params: { id: item.id, name: item.name },
-              })
-            }
+              });
+            }}
             // Fixed width and a background color for the bottom section
             className="w-64 mr-4 rounded-3xl overflow-hidden bg-[#F5FAFF] border border-blue-100"
           >
@@ -292,7 +292,7 @@ const HorizontalSection = ({
           <Text className="text-lg font-semibold text-gray-800">{title}</Text>
         </View>
 
-        <Pressable onPress={() => router.push(route as any)}>
+        <Pressable onPress={() => router.push(route as any)} hitSlop={20}>
           <Text className="text-blue-600">View All</Text>
         </Pressable>
       </View>
