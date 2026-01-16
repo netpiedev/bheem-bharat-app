@@ -17,46 +17,8 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLanguage } from "../lib/LanguageContext";
 import { getUserProfile, updateUserProfile } from "../lib/auth.api";
+import { INDIAN_STATES } from "../lib/indianStates";
 import { registerForPushNotifications } from "../lib/notifications";
-
-const INDIAN_STATES = [
-  "Andhra Pradesh",
-  "Arunachal Pradesh",
-  "Assam",
-  "Bihar",
-  "Chhattisgarh",
-  "Goa",
-  "Gujarat",
-  "Haryana",
-  "Himachal Pradesh",
-  "Jharkhand",
-  "Karnataka",
-  "Kerala",
-  "Madhya Pradesh",
-  "Maharashtra",
-  "Manipur",
-  "Meghalaya",
-  "Mizoram",
-  "Nagaland",
-  "Odisha",
-  "Punjab",
-  "Rajasthan",
-  "Sikkim",
-  "Tamil Nadu",
-  "Telangana",
-  "Tripura",
-  "Uttar Pradesh",
-  "Uttarakhand",
-  "West Bengal",
-  "Andaman and Nicobar Islands",
-  "Chandigarh",
-  "Dadra and Nagar Haveli and Daman and Diu",
-  "Delhi",
-  "Jammu and Kashmir",
-  "Ladakh",
-  "Lakshadweep",
-  "Puducherry",
-].sort();
 
 function formatDateString(dateObj: Date): string {
   return [
@@ -192,7 +154,7 @@ export default function CompleteProfile() {
 
     // Remove any non-digit characters for phone validation
     const phoneDigits = trimmedPhone.replace(/\D/g, "");
-    if (phoneDigits.length < 10) {
+    if (phoneDigits.length !== 10) {
       Alert.alert(t("auth_invalid_phone"), t("auth_invalid_phone_message"));
       return;
     }
@@ -283,6 +245,15 @@ export default function CompleteProfile() {
       );
     }
   };
+
+  const isDisabled =
+    !name ||
+    !email ||
+    phone.length !== 10 ||
+    !gender ||
+    !city ||
+    !state ||
+    !dob;
 
   const openDatePicker = () => setIsDatePickerVisible(true);
 
@@ -401,17 +372,6 @@ export default function CompleteProfile() {
                   className="ml-3 flex-1 text-base text-slate-900"
                 />
               </View>
-
-              {/* <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 mt-4">
-                <Ionicons name="location-outline" size={20} color="#64748b" />
-                <TextInput
-                  placeholder="State"
-                  placeholderTextColor="#94a3b8"
-                  value={state}
-                  onChangeText={setState}
-                  className="ml-3 flex-1 text-base text-slate-900"
-                />
-              </View> */}
 
               {/* State Selection */}
               <Pressable
@@ -581,9 +541,18 @@ export default function CompleteProfile() {
           <View className="mt-8">
             <Pressable
               onPress={handleCompleteProfile}
-              className="bg-blue-600 py-4 rounded-2xl items-center shadow-md shadow-blue-200"
+              disabled={isDisabled}
+              className={`py-4 rounded-2xl items-center shadow-md ${
+                isDisabled
+                  ? "bg-gray-300 shadow-none" // Disabled state
+                  : "bg-blue-600 shadow-blue-200" // Active state
+              }`}
             >
-              <Text className="text-white font-bold text-lg">
+              <Text
+                className={`font-bold text-lg ${
+                  isDisabled ? "text-gray-500" : "text-white"
+                }`}
+              >
                 {t("auth_complete_profile")}
               </Text>
             </Pressable>
