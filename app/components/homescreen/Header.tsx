@@ -99,6 +99,7 @@ export default function Header({ onStateSelected }: HeaderProps) {
           <Pressable
             onPress={() => setModalVisible(true)}
             className="flex-row items-center mt-1"
+            hitSlop={20}
           >
             <Ionicons name="location-outline" size={16} color="white" />
             <Text className="text-white ml-1 font-medium">{selectedState}</Text>

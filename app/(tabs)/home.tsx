@@ -148,7 +148,7 @@ export default function HomeScreen() {
                   resizeMode="cover"
                 />
               ) : (
-                <View className="w-full h-full items-center justify-center bg-indigo-500">
+                <View className="w-full h-full items-center justify-center bg-blue-600">
                   <Ionicons name="bed-outline" size={40} color="white" />
                 </View>
               )}
