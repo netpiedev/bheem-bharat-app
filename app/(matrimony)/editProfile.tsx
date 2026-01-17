@@ -105,7 +105,7 @@ export default function EditProfileScreen() {
 
   useEffect(() => {
     if (myProfile && !isDobDisabled) {
-      setGender(myProfile.gender);
+      setGender(myProfile.user.gender);
       // Only use profile.dob if user.dob is not available
       if (!userDob && myProfile.dob) {
         const dt = new Date(myProfile.dob);
@@ -122,11 +122,11 @@ export default function EditProfileScreen() {
       setEducation(myProfile.education || "");
       setIncome(myProfile.income || "");
       setAboutMeText(myProfile.about_me_text || "");
-      setCity(myProfile.city || "");
+      setCity(myProfile.user.city || "");
       setMotherOccupation(myProfile.mother_occupation || "");
       setFatherOccupation(myProfile.father_occupation || "");
-      setState(myProfile.state || "");
-      setVillage(myProfile.village || "");
+      setState(myProfile.user?.state || "");
+      setVillage(myProfile.address?.village || "");
       setSiblingsCount(myProfile.siblings_count?.toString() || "");
       setImages(myProfile.images || []);
     }
@@ -212,7 +212,6 @@ export default function EditProfileScreen() {
 
     const updatePayload: any = {};
     if (gender !== myProfile?.gender) updatePayload.gender = gender;
-    // Don't update dob if it's disabled (comes from user profile)
     if (!isDobDisabled && formattedDob && formattedDob !== myProfile?.dob) {
       // dob is no longer updated in matrimony profiles, it comes from users table
       // updatePayload.dob = formattedDob;
@@ -236,13 +235,13 @@ export default function EditProfileScreen() {
       (myProfile?.about_me_text || "")
     )
       updatePayload.about_me_text = aboutMeText || null;
-    if (city !== (myProfile?.city || "")) updatePayload.city = city || null;
+    if (city !== (myProfile?.user?.city || "")) updatePayload.city = city || null;
     if (motherOccupation !== (myProfile?.mother_occupation || ""))
       updatePayload.mother_occupation = motherOccupation || null;
     if (fatherOccupation !== (myProfile?.father_occupation || ""))
       updatePayload.father_occupation = fatherOccupation || null;
-    if (state !== (myProfile?.state || "")) updatePayload.state = state || null;
-    if (village !== (myProfile?.village || ""))
+    if (state !== (myProfile?.user?.state || "")) updatePayload.state = state || null;
+    if (village !== (myProfile?.address?.village || ""))
       updatePayload.village = village || null;
     if (
       siblingsCount !== (myProfile?.siblings_count?.toString() || "")
@@ -273,6 +272,7 @@ export default function EditProfileScreen() {
       setDob(formatDateString(selectedDate));
     }
   };
+  console.log(gender)
 
   if (isLoading) {
     return (

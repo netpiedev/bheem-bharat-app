@@ -32,8 +32,17 @@ export interface MatrimonyProfileWithUser extends MatrimonyProfile {
     email: string | null;
     phone: string;
     photo?: string | null;
-    dob?: string | null;
+    dob: string | null;
+    gender: Gender;
+    city?: string | null;
+    state?: string | null;
   };
+  address?: {
+    id: string | null;
+    city: string | null;
+    state: string | null;
+    village: string | null;
+  } | null;
 }
 
 export interface WishlistItem {
