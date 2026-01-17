@@ -191,6 +191,7 @@ export default {
   matrimony_enter_father_occupation: "वडिलांचा व्यवसाय प्रविष्ट करा",
   matrimony_siblings_count: "भावंडांची संख्या",
   matrimony_dob_from_user_profile: "(वापरकर्ता प्रोफाइलमधून)",
+  matrimony_search_by_name_city: "नाव किंवा शहरानुसार शोधा",
 
   // ===== Auth Profile =====
   auth_about_you: "तुमच्याबद्दल",

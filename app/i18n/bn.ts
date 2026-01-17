@@ -189,6 +189,7 @@ export default {
   matrimony_enter_father_occupation: "বাবার পেশা লিখুন",
   matrimony_siblings_count: "ভাইবোনের সংখ্যা",
   matrimony_dob_from_user_profile: "(ব্যবহারকারী প্রোফাইল থেকে)",
+  matrimony_search_by_name_city: "নাম বা শহর অনুসারে খুঁজুন",
 
   // ===== Auth Profile =====
   auth_about_you: "আপনার সম্পর্কে",

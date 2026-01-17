@@ -190,6 +190,7 @@ export default {
   matrimony_enter_father_occupation: "Enter father's occupation",
   matrimony_siblings_count: "Siblings Count",
   matrimony_dob_from_user_profile: "(from user profile)",
+  matrimony_search_by_name_city: "Search by name or city",
 
   // ===== Auth Profile =====
   auth_about_you: "About You",
