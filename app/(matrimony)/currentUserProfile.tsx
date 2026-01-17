@@ -508,39 +508,25 @@ function CreateProfileForm() {
 
           {/* Date of Birth */}
           <Text className="text-gray-900 font-semibold mb-2">
-            {t("profile_dob_label")} {!isDobDisabled ? "*" : ""} (YYYY-MM-DD)
+            {t("profile_dob_label")} {!isDobDisabled ? "*" : ""}
             {isDobDisabled && (
               <Text className="text-gray-500 text-xs ml-2">
                 {t("matrimony_dob_from_profile")}
               </Text>
             )}
           </Text>
-          <View className={`flex-row items-center bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4 ${isDobDisabled ? "opacity-60" : ""}`}>
-            <TextInput
-              value={dob}
-              onChangeText={(text) => {
-                if (!isDobDisabled) {
-                  setDob(text);
-                  const parsed = parseDateString(text);
-                  if (parsed) setDateObj(parsed);
-                }
-              }}
-              placeholder="2000-01-01"
-              className="flex-1 text-base text-gray-900"
-              placeholderTextColor="#9CA3AF"
-              editable={!isDobDisabled}
-            />
+          <Pressable
+            onPress={isDobDisabled ? undefined : openDatePicker}
+            disabled={isDobDisabled}
+            className={`flex-row items-center bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4 ${isDobDisabled ? "opacity-60" : ""}`}
+          >
+            <Text className={`flex-1 text-base ${dob ? 'text-gray-900' : 'text-gray-400'}`}>
+              {dob || "Select date"}
+            </Text>
             {!isDobDisabled && (
-              <TouchableOpacity
-                onPress={openDatePicker}
-                className="ml-3"
-                accessibilityLabel="Show date picker"
-                accessibilityRole="button"
-              >
-                <Ionicons name="calendar-sharp" size={22} color="#0B5ED7" />
-              </TouchableOpacity>
+              <Ionicons name="calendar-sharp" size={22} color="#0B5ED7" />
             )}
-          </View>
+          </Pressable>
           {isDatePickerVisible &&
             DateTimePicker &&
             (Platform.OS === "ios" ? (
@@ -560,15 +546,13 @@ function CreateProfileForm() {
                 </Pressable>
               </View>
             ) : (
-              <View className="mb-4">
-                <DateTimePicker
-                  value={dateObj || new Date(2000, 0, 1)}
-                  mode="date"
-                  display="default"
-                  onChange={onChangeDate}
-                  maximumDate={new Date()}
-                />
-              </View>
+              <DateTimePicker
+                value={dateObj || new Date(2000, 0, 1)}
+                mode="date"
+                display="default"
+                onChange={onChangeDate}
+                maximumDate={new Date()}
+              />
             ))}
 
           {/* Height */}

@@ -48,8 +48,8 @@ export default function BrowseProfilesScreen() {
 
   const [page, setPage] = useState(1);
   const [gender, setGender] = useState<"" | "MALE" | "FEMALE">("");
-  const [city, setCity] = useState("");
-  const [debouncedCity, setDebouncedCity] = useState("");
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [wishlistIds, setWishlistIds] = useState<Set<string>>(new Set());
 
   /* ---------------- RESET PAGE WHEN GENDER CHANGES ---------------- */
@@ -57,27 +57,26 @@ export default function BrowseProfilesScreen() {
     setPage(1);
   }, [gender]);
 
-  /* ---------------- DEBOUNCE CITY (500ms) ---------------- */
+  /* ---------------- DEBOUNCE SEARCH (500ms) ---------------- */
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedCity(city.trim());
+      setDebouncedSearch(search.trim());
       setPage(1);
     }, 500);
     return () => clearTimeout(timer);
-  }, [city]);
+  }, [search]);
 
   /* ---------------- PROFILES ---------------- */
-  const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["matrimony-profiles", page, gender, debouncedCity],
+  const { data, isLoading, isError, refetch, isFetching } = useQuery({
+    queryKey: ["matrimony-profiles", page, gender, debouncedSearch || null],
     queryFn: () =>
       getProfiles({
         page,
         limit: 20,
         gender: gender || undefined,
-        city: debouncedCity || undefined,
+        search: debouncedSearch && debouncedSearch.trim() !== "" ? debouncedSearch.trim() : undefined,
       }),
-    keepPreviousData: true,
-    initialData: { data: [], total: 0 },
+    enabled: true,
   });
 
   /* ---------------- WISHLIST ---------------- */
@@ -194,7 +193,7 @@ export default function BrowseProfilesScreen() {
   };
 
   /* ---------------- LOADING / ERROR ---------------- */
-  if (isLoading && !data) {
+  if (isLoading) {
     return (
       <View className="flex-1 bg-gray-50">
         <WhiteHeader title={t("matrimony_all_profiles")} />
@@ -257,9 +256,9 @@ export default function BrowseProfilesScreen() {
         <View className="flex-row items-center bg-gray-100 rounded-xl px-4 py-2">
           <Ionicons name="search" size={16} color="#9CA3AF" />
           <TextInput
-            placeholder={t("matrimony_search_by_city")}
-            value={city}
-            onChangeText={setCity}
+            placeholder={t("matrimony_search_by_name_city") || "Search by name or city"}
+            value={search}
+            onChangeText={setSearch}
             className="ml-3 flex-1"
           />
         </View>
@@ -267,13 +266,28 @@ export default function BrowseProfilesScreen() {
 
       {/* GRID LIST */}
       <FlatList
-        data={data?.data || []}
+        data={data?.data ?? []}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
         numColumns={2}
-        contentContainerStyle={{ padding: 8 }}
+        contentContainerStyle={{ 
+          padding: 8,
+          flexGrow: 1,
+        }}
+        refreshing={isFetching && !isLoading}
+        ListEmptyComponent={
+          isLoading ? (
+            <View className="flex-1 items-center justify-center py-8">
+              <ActivityIndicator size="small" color="#2563EB" />
+            </View>
+          ) : (
+            <View className="flex-1 items-center justify-center py-8">
+              <Text className="text-gray-500">{t("matrimony_no_profiles_found") || "No profiles found"}</Text>
+            </View>
+          )
+        }
         onEndReached={() => {
-          if (data && data.data.length < data.total) {
+          if (data && data.data && data.data.length < data.total && !isFetching) {
             setPage((p) => p + 1);
           }
         }}

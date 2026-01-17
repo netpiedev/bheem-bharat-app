@@ -444,31 +444,18 @@ export default function CompleteProfile() {
               </Modal>
 
               <View className="mt-4">
-                <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4">
+                <Pressable
+                  onPress={openDatePicker}
+                  className="flex-row items-center bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4"
+                  accessibilityLabel="Show date picker"
+                  accessibilityRole="button"
+                >
                   <Ionicons name="calendar-outline" size={20} color="#64748b" />
-                  <TextInput
-                    placeholder={t("auth_dob_placeholder")}
-                    placeholderTextColor="#94a3b8"
-                    value={dob}
-                    onChangeText={(text) => {
-                      const cleaned = text.replace(/[^0-9/]/g, "");
-                      setDob(cleaned);
-                      const parsed = parseDateString(cleaned);
-                      if (parsed) setDateObj(parsed);
-                    }}
-                    className="ml-3 flex-1 text-base text-slate-900"
-                    keyboardType="numeric"
-                    maxLength={10}
-                  />
-                  <Pressable
-                    onPress={openDatePicker}
-                    className="ml-3"
-                    accessibilityLabel="Show date picker"
-                    accessibilityRole="button"
-                  >
-                    <Ionicons name="calendar-sharp" size={22} color="#0B5ED7" />
-                  </Pressable>
-                </View>
+                  <Text className={`ml-3 flex-1 text-base ${dob ? 'text-slate-900' : 'text-slate-400'}`}>
+                    {dob || t("auth_dob_placeholder")}
+                  </Text>
+                  <Ionicons name="calendar-sharp" size={22} color="#0B5ED7" />
+                </Pressable>
                 {isDatePickerVisible &&
                   DateTimePicker &&
                   (Platform.OS === "ios" ? (

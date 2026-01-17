@@ -395,42 +395,27 @@ export default function EditProfileScreen() {
 
           {/* Date of Birth */}
           <Text className="text-gray-900 font-semibold mb-2">
-            {t("profile_dob_label")} (YYYY-MM-DD)
+            {t("profile_dob_label")}
             {userDob && (
               <Text className="text-gray-500 text-sm font-normal ml-2">
                 {t("matrimony_dob_from_user_profile")}
               </Text>
             )}
           </Text>
-          <View className={`flex-row items-center bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4 ${userDob ? 'opacity-60' : ''}`}>
-            <TextInput
-              value={dob}
-              onChangeText={(text) => {
-                if (!userDob) {
-                  setDob(text);
-                  const parsed = parseDateString(text);
-                  if (parsed) setDateObj(parsed);
-                }
-              }}
-              placeholder="2000-01-01"
-              className="flex-1 text-base text-gray-900"
-              placeholderTextColor="#9CA3AF"
-              editable={!userDob}
+          <Pressable
+            onPress={userDob ? undefined : openDatePicker}
+            disabled={!!userDob}
+            className={`flex-row items-center bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4 ${userDob ? 'opacity-60' : ''}`}
+          >
+            <Text className={`flex-1 text-base ${dob ? 'text-gray-900' : 'text-gray-400'}`}>
+              {dob || "Select date"}
+            </Text>
+            <Ionicons 
+              name="calendar-sharp" 
+              size={22} 
+              color={userDob ? "#9CA3AF" : "#0B5ED7"} 
             />
-            <TouchableOpacity
-              onPress={userDob ? undefined : openDatePicker}
-              className="ml-3"
-              accessibilityLabel="Show date picker"
-              accessibilityRole="button"
-              disabled={!!userDob}
-            >
-              <Ionicons 
-                name="calendar-sharp" 
-                size={22} 
-                color={userDob ? "#9CA3AF" : "#0B5ED7"} 
-              />
-            </TouchableOpacity>
-          </View>
+          </Pressable>
           {isDatePickerVisible &&
             DateTimePicker &&
             (Platform.OS === "ios" ? (
@@ -450,15 +435,13 @@ export default function EditProfileScreen() {
                 </Pressable>
               </View>
             ) : (
-              <View className="mb-4">
-                <DateTimePicker
-                  value={dateObj || new Date(2000, 0, 1)}
-                  mode="date"
-                  display="default"
-                  onChange={onChangeDate}
-                  maximumDate={new Date()}
-                />
-              </View>
+              <DateTimePicker
+                value={dateObj || new Date(2000, 0, 1)}
+                mode="date"
+                display="default"
+                onChange={onChangeDate}
+                maximumDate={new Date()}
+              />
             ))}
 
           {/* Height */}

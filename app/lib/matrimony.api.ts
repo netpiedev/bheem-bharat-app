@@ -14,6 +14,8 @@ export const getProfiles = async (params?: {
   gender?: string;
   state?: string;
   city?: string;
+  name?: string;
+  search?: string;
   page?: number;
   limit?: number;
 }): Promise<GetProfilesResponse> => {
@@ -21,6 +23,8 @@ export const getProfiles = async (params?: {
   if (params?.gender) queryParams.append("gender", params.gender);
   if (params?.state) queryParams.append("state", params.state);
   if (params?.city) queryParams.append("city", params.city);
+  if (params?.name) queryParams.append("name", params.name);
+  if (params?.search) queryParams.append("search", params.search);
   if (params?.page) queryParams.append("page", params.page.toString());
   if (params?.limit) queryParams.append("limit", params.limit.toString());
 
