@@ -76,10 +76,13 @@ export interface CreateProfileRequest {
   profession?: string | null;
   education?: string | null;
   income?: string | null;
-  about_me?: string | null;
+  about_me_text?: string | null;
   state_from_user?: boolean;
   city?: string | null;
+  state?: string | null;
+  village?: string | null;
   mother_occupation?: string | null;
+  father_occupation?: string | null;
   siblings_count?: number | null;
   expected_details?: Record<string, unknown> | null;
 }

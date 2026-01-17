@@ -269,10 +269,16 @@ function CreateProfileForm() {
   const [height, setHeight] = useState("");
   const [religion, setReligion] = useState("");
   const [caste, setCaste] = useState("");
+  const [region, setRegion] = useState("");
   const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [village, setVillage] = useState("");
   const [education, setEducation] = useState("");
   const [profession, setProfession] = useState("");
   const [income, setIncome] = useState("");
+  const [motherOccupation, setMotherOccupation] = useState("");
+  const [fatherOccupation, setFatherOccupation] = useState("");
+  const [siblingsCount, setSiblingsCount] = useState("");
   const [aboutMe, setAboutMe] = useState("");
   const [newImageUris, setNewImageUris] = useState<string[]>([]);
   const [userDob, setUserDob] = useState<string | null>(null);
@@ -408,11 +414,17 @@ function CreateProfileForm() {
       height: height ? parseInt(height, 10) : null,
       religion: religion || null,
       caste: caste || null,
+      region: region || null,
       city: city || null,
+      state: state || null,
+      village: village || null,
       education: education || null,
       profession: profession || null,
       income: income || null,
-      about_me: aboutMe || null,
+      mother_occupation: motherOccupation || null,
+      father_occupation: fatherOccupation || null,
+      siblings_count: siblingsCount ? parseInt(siblingsCount, 10) : null,
+      about_me_text: aboutMe || null,
     });
     
     // Note: Images will be uploaded in the onSuccess callback
@@ -590,12 +602,42 @@ function CreateProfileForm() {
             placeholderTextColor="#9CA3AF"
           />
 
+          {/* Region */}
+          <Text className="text-gray-900 font-semibold mb-2">{t("matrimony_region")}</Text>
+          <TextInput
+            value={region}
+            onChangeText={setRegion}
+            placeholder={t("matrimony_enter_region")}
+            className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4"
+            placeholderTextColor="#9CA3AF"
+          />
+
           {/* City */}
           <Text className="text-gray-900 font-semibold mb-2">{t("profile_city")}</Text>
           <TextInput
             value={city}
             onChangeText={setCity}
             placeholder={t("matrimony_enter_city")}
+            className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4"
+            placeholderTextColor="#9CA3AF"
+          />
+
+          {/* State */}
+          <Text className="text-gray-900 font-semibold mb-2">{t("matrimony_state")}</Text>
+          <TextInput
+            value={state}
+            onChangeText={setState}
+            placeholder={t("matrimony_enter_city")}
+            className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4"
+            placeholderTextColor="#9CA3AF"
+          />
+
+          {/* Village */}
+          <Text className="text-gray-900 font-semibold mb-2">{t("matrimony_village")}</Text>
+          <TextInput
+            value={village}
+            onChangeText={setVillage}
+            placeholder={t("matrimony_enter_village")}
             className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4"
             placeholderTextColor="#9CA3AF"
           />
@@ -626,6 +668,43 @@ function CreateProfileForm() {
             value={income}
             onChangeText={setIncome}
             placeholder={t("matrimony_enter_income")}
+            className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4"
+            placeholderTextColor="#9CA3AF"
+          />
+
+          {/* Mother Occupation */}
+          <Text className="text-gray-900 font-semibold mb-2">
+            {t("matrimony_mother_occupation")}
+          </Text>
+          <TextInput
+            value={motherOccupation}
+            onChangeText={setMotherOccupation}
+            placeholder={t("matrimony_enter_mother_occupation")}
+            className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4"
+            placeholderTextColor="#9CA3AF"
+          />
+
+          {/* Father Occupation */}
+          <Text className="text-gray-900 font-semibold mb-2">
+            {t("matrimony_father_occupation")}
+          </Text>
+          <TextInput
+            value={fatherOccupation}
+            onChangeText={setFatherOccupation}
+            placeholder={t("matrimony_enter_father_occupation")}
+            className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4"
+            placeholderTextColor="#9CA3AF"
+          />
+
+          {/* Siblings Count */}
+          <Text className="text-gray-900 font-semibold mb-2">
+            {t("matrimony_siblings_count")}
+          </Text>
+          <TextInput
+            value={siblingsCount}
+            onChangeText={setSiblingsCount}
+            placeholder="0"
+            keyboardType="numeric"
             className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4"
             placeholderTextColor="#9CA3AF"
           />
