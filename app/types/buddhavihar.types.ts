@@ -6,67 +6,69 @@
 /* ---------- API Wrapper ---------- */
 
 export interface ApiListResponse<T> {
-  status: "success";
-  count: number;
-  data: T[];
+	status: "success";
+	count: number;
+	data: T[];
 }
 
 export interface ApiSingleResponse<T> {
-  status: "success";
-  data: T;
+	status: "success";
+	data: T;
 }
 
 /* ---------- States Screen ---------- */
 /* GET /resources/buddhavihars/states */
 
 export interface BuddhaViharState {
-  id: string;
-  name: string;
-  totalCities: number;
-  totalBuddhaVihars: number;
+	id: string;
+	name: string;
+	totalCities: number;
+	totalBuddhaVihars: number;
 }
 
 /* ---------- Cities Screen ---------- */
 /* GET /resources/buddhavihars/states/:stateId/cities */
 
 export interface BuddhaViharCity {
-  id: string;
-  name: string;
-  totalBuddhaVihars: number;
+	id: string;
+	name: string;
+	totalBuddhaVihars: number;
 }
 
 /* ---------- Vihar List Screen ---------- */
 /* GET /resources/buddhavihars/cities/:cityId/vihars */
 
 export interface BuddhaViharListItem {
-  id: string;
-  name: string;
-  address: string | null;
+	id: string;
+	name: string;
+	address: string | null;
+	image: string | null;
 }
 
 /* ---------- Vihar Details Screen ---------- */
 /* GET /resources/buddhavihars/vihars/:viharId */
 
 export interface BuddhaViharDetails {
-  id: string;
-  name: string;
+	id: string;
+	name: string;
 
-  address: string | null;
-  pincode: string | null;
+	address: string | null;
+	pincode: string | null;
 
-  phone: string | null;
-  email: string | null;
+	phone: string | null;
+	email: string | null;
 
-  description: string | null;
-  created_at: string;
+	description: string | null;
+	image: string | null;
+	created_at: string;
 
-  state: {
-    id: string;
-    name: string;
-  };
+	state: {
+		id: string;
+		name: string;
+	};
 
-  city: {
-    id: string;
-    name: string;
-  };
+	city: {
+		id: string;
+		name: string;
+	};
 }
