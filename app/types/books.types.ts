@@ -31,6 +31,7 @@ export type BookListItem = {
   author: string;
   category: string;
   cover_image_object_key: string;
+  pdf_available: boolean;
 };
 
 export type BookDetail = {
