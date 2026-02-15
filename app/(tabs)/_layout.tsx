@@ -1,18 +1,51 @@
 import { useLanguage } from "@/app/lib/LanguageContext";
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
+import { Platform } from "react-native";
 
 export default function TabsLayout() {
   const { t } = useLanguage();
 
   return (
-    <Tabs screenOptions={{ headerShown: false }}>
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: "#0B5ED7",
+        tabBarInactiveTintColor: "#9CA3AF",
+        tabBarStyle: {
+          backgroundColor: "#FFFFFF",
+          borderTopWidth: 0,
+          elevation: 8,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
+          height: Platform.OS === "ios" ? 88 : 70,
+          paddingTop: 8,
+          paddingBottom: Platform.OS === "ios" ? 28 : 8,
+          paddingHorizontal: 8,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: "600",
+          marginTop: 4,
+          marginBottom: 0,
+        },
+        tabBarIconStyle: {
+          marginTop: 4,
+        },
+      }}
+    >
       <Tabs.Screen
         name="home"
         options={{
           title: t("tabs_home"),
-          tabBarIcon: ({ color }) => (
-            <Ionicons name="home-outline" size={22} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "home" : "home-outline"}
+              size={focused ? 28 : 26}
+              color={color}
+            />
           ),
         }}
       />
@@ -21,8 +54,12 @@ export default function TabsLayout() {
         options={{
           title: t("tabs_matrimony"),
           headerShown: false,
-          tabBarIcon: ({ color }) => (
-            <Ionicons name="heart-outline" size={22} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "heart" : "heart-outline"}
+              size={focused ? 28 : 26}
+              color={color}
+            />
           ),
         }}
       />
@@ -30,8 +67,12 @@ export default function TabsLayout() {
         name="buddhavihar"
         options={{
           title: t("tabs_buddhavihar"),
-          tabBarIcon: ({ color }) => (
-            <Ionicons name="business-outline" size={22} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "business" : "business-outline"}
+              size={focused ? 28 : 26}
+              color={color}
+            />
           ),
         }}
       />
@@ -39,8 +80,12 @@ export default function TabsLayout() {
         name="resources"
         options={{
           title: t("tabs_resources"),
-          tabBarIcon: ({ color }) => (
-            <Ionicons name="book-outline" size={22} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "book" : "book-outline"}
+              size={focused ? 28 : 26}
+              color={color}
+            />
           ),
         }}
         listeners={({ navigation }) => ({
@@ -53,11 +98,28 @@ export default function TabsLayout() {
         })}
       />
       <Tabs.Screen
+        name="job"
+        options={{
+          title: t("tabs_job"),
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "briefcase" : "briefcase-outline"}
+              size={focused ? 28 : 26}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: t("tabs_profile"),
-          tabBarIcon: ({ color }) => (
-            <Ionicons name="person-outline" size={22} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "person" : "person-outline"}
+              size={focused ? 28 : 26}
+              color={color}
+            />
           ),
         }}
       />

@@ -2,8 +2,9 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  Dimensions,
   FlatList,
   Image,
   Pressable,
@@ -96,35 +97,8 @@ export default function HomeScreen() {
 
       <ResourceScroll />
 
-      {/* Special Matrimony Drive Banner */}
-      <View className="mx-5 bg-[#014BB4] p-6 rounded-3xl mb-6">
-        <View className="flex-row items-center mb-2">
-          <View className="w-2 h-2 rounded-full bg-white mr-2" />
-          <Text className="text-white opacity-80 uppercase text-xs font-bold tracking-widest">
-            {t("home_featured")}
-          </Text>
-        </View>
-        <Text className="text-white text-xl font-bold mb-2">
-          {t("home_matrimony_drive_title")}
-        </Text>
-        <Text className="text-white/80 mb-4">
-          {t("home_matrimony_drive_desc")}
-        </Text>
-        <Pressable
-          onPress={() =>
-            router.push({
-              pathname: myProfile
-                ? "/(matrimony)/browse"
-                : "/(matrimony)/currentUserProfile",
-            })
-          }
-          className="bg-white self-start px-6 py-3 rounded-lg"
-        >
-          <Text className="text-[#014BB4] font-medium">
-            {t("home_explore_now")}
-          </Text>
-        </Pressable>
-      </View>
+      {/* Image Carousel */}
+      <ImageCarousel />
 
       {/* Hostels Section (Filtered) */}
       <HorizontalSection
@@ -175,7 +149,7 @@ export default function HomeScreen() {
 
               <View className="flex-row items-center mt-3">
                 <Ionicons name="person-outline" size={14} color="#2563eb" />
-                <Text className="text-gray-400 text-[#2563eb] text-xs ml-2">
+                <Text className="text-[#2563eb] text-xs ml-2">
                   {t("home_capacity")} {item.capacity}
                 </Text>
               </View>
@@ -373,5 +347,242 @@ const ResourceScroll = () => {
         </Pressable>
       )}
     />
+  );
+};
+
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const CAROUSEL_WIDTH = SCREEN_WIDTH; // Full width for proper paging
+
+const ImageCarousel = () => {
+  const router = useRouter();
+  const flatListRef = useRef<FlatList>(null);
+  const [currentIndex, setCurrentIndex] = useState(1);
+  const currentIndexRef = useRef(1);
+  const autoScrollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isScrollingRef = useRef(false);
+  const isJumpingRef = useRef(false);
+
+  // Carousel images with navigation mapping
+  const carouselImages = [
+    require("@/assets/images/crousel bheem bharat /6.png"),
+    require("@/assets/images/crousel bheem bharat /7.png"), // -> jobs tab
+    require("@/assets/images/crousel bheem bharat /8.png"), // -> matrimony tab
+    require("@/assets/images/crousel bheem bharat /9.png"), // -> buddhavihar tab
+    require("@/assets/images/crousel bheem bharat /10.png"),
+  ];
+
+  // Create infinite scroll data by duplicating items
+  const infiniteData = [
+    carouselImages[carouselImages.length - 1], // Last item at the beginning
+    ...carouselImages,
+    carouselImages[0], // First item at the end
+  ];
+
+  // Handle image click navigation
+  const handleImagePress = (infiniteIndex: number) => {
+    // Map infinite index to actual image index
+    let actualIndex: number;
+    if (infiniteIndex === 0) {
+      // First duplicate (last image)
+      actualIndex = carouselImages.length - 1;
+    } else if (infiniteIndex === infiniteData.length - 1) {
+      // Last duplicate (first image)
+      actualIndex = 0;
+    } else {
+      // Real items (subtract 1 because index 0 is duplicate)
+      actualIndex = infiniteIndex - 1;
+    }
+
+    // Navigate based on image
+    if (actualIndex === 1) {
+      // 7.png -> jobs tab
+      router.push("/(tabs)/job");
+    } else if (actualIndex === 2) {
+      // 8.png -> matrimony tab
+      router.push("/(matrimony)/browse");
+    } else if (actualIndex === 3) {
+      // 9.png -> buddhavihar tab
+      router.push("/(tabs)/buddhavihar");
+    }
+  };
+
+  // Auto-scroll function
+  const startAutoScroll = useCallback(() => {
+    if (autoScrollTimerRef.current) {
+      clearInterval(autoScrollTimerRef.current);
+    }
+
+    autoScrollTimerRef.current = setInterval(() => {
+      if (!isScrollingRef.current && !isJumpingRef.current && flatListRef.current) {
+        const nextIndex = currentIndexRef.current + 1;
+        
+        // If we're at the last real item, loop back to first
+        if (nextIndex >= infiniteData.length - 1) {
+          // Scroll to the duplicate first item (which will jump to real first)
+          flatListRef.current.scrollToIndex({
+            index: infiniteData.length - 1,
+            animated: true,
+          });
+        } else {
+          flatListRef.current.scrollToIndex({
+            index: nextIndex,
+            animated: true,
+          });
+        }
+      }
+    }, 3500); // Auto-scroll every 3.5 seconds (slower, smoother)
+  }, [infiniteData.length]);
+
+  useEffect(() => {
+    // Start at index 1 (first real item)
+    const timer = setTimeout(() => {
+      if (flatListRef.current) {
+        flatListRef.current.scrollToOffset({ offset: CAROUSEL_WIDTH, animated: false });
+        currentIndexRef.current = 1;
+        setCurrentIndex(1);
+      }
+    }, 100);
+
+    // Start auto-scroll
+    startAutoScroll();
+
+    return () => {
+      clearTimeout(timer);
+      if (autoScrollTimerRef.current) {
+        clearInterval(autoScrollTimerRef.current);
+      }
+    };
+  }, [startAutoScroll]);
+
+  const handleScroll = (event: any) => {
+    if (isJumpingRef.current) return;
+    
+    const contentOffsetX = event.nativeEvent.contentOffset.x;
+    const index = Math.round(contentOffsetX / CAROUSEL_WIDTH);
+    
+    // Only update index for real items (not duplicates)
+    if (index > 0 && index < infiniteData.length - 1 && index !== currentIndexRef.current) {
+      setCurrentIndex(index);
+      currentIndexRef.current = index;
+    }
+  };
+
+  const handleMomentumScrollEnd = (event: any) => {
+    const contentOffsetX = event.nativeEvent.contentOffset.x;
+    const index = Math.round(contentOffsetX / CAROUSEL_WIDTH);
+    isScrollingRef.current = false;
+
+    // Infinite scroll logic - instant jump without delay
+    if (index === 0) {
+      // If at the duplicate last item, jump to the real last item instantly
+      isJumpingRef.current = true;
+      flatListRef.current?.scrollToOffset({
+        offset: CAROUSEL_WIDTH * carouselImages.length,
+        animated: false,
+      });
+      setCurrentIndex(carouselImages.length);
+      currentIndexRef.current = carouselImages.length;
+      // Reset flag immediately
+      isJumpingRef.current = false;
+    } else if (index === infiniteData.length - 1) {
+      // If at the duplicate first item, jump to the real first item instantly
+      isJumpingRef.current = true;
+      flatListRef.current?.scrollToOffset({
+        offset: CAROUSEL_WIDTH,
+        animated: false,
+      });
+      setCurrentIndex(1);
+      currentIndexRef.current = 1;
+      // Reset flag immediately
+      isJumpingRef.current = false;
+    } else {
+      setCurrentIndex(index);
+      currentIndexRef.current = index;
+    }
+
+    // Restart auto-scroll after manual scroll
+    startAutoScroll();
+  };
+
+  const handleScrollBeginDrag = () => {
+    isScrollingRef.current = true;
+    if (autoScrollTimerRef.current) {
+      clearInterval(autoScrollTimerRef.current);
+    }
+  };
+
+  const getItemLayout = (_: any, index: number) => ({
+    length: CAROUSEL_WIDTH,
+    offset: CAROUSEL_WIDTH * index,
+    index,
+  });
+
+  const onScrollToIndexFailed = (info: any) => {
+    const wait = new Promise((resolve) => setTimeout(resolve, 500));
+    wait.then(() => {
+      flatListRef.current?.scrollToOffset({
+        offset: CAROUSEL_WIDTH * info.index,
+        animated: false,
+      });
+    });
+  };
+
+  // Real index for pagination dots (0-4)
+  const realIndex =
+    currentIndex === 0
+      ? carouselImages.length - 1
+      : currentIndex === infiniteData.length - 1
+        ? 0
+        : currentIndex - 1;
+
+  return (
+    <View className="mb-6">
+      <FlatList
+        ref={flatListRef}
+        data={infiniteData}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        keyExtractor={(_, index) => `carousel-${index}`}
+        renderItem={({ item, index }) => (
+          <Pressable
+            onPress={() => handleImagePress(index)}
+            style={{ width: CAROUSEL_WIDTH, paddingHorizontal: 20 }}
+            className="rounded-3xl overflow-hidden shadow-lg active:opacity-90"
+          >
+            <Image
+              source={item}
+              style={{ width: CAROUSEL_WIDTH - 40, height: 200 }}
+              resizeMode="cover"
+              className="rounded-3xl"
+            />
+          </Pressable>
+        )}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        onMomentumScrollEnd={handleMomentumScrollEnd}
+        onScrollBeginDrag={handleScrollBeginDrag}
+        getItemLayout={getItemLayout}
+        onScrollToIndexFailed={onScrollToIndexFailed}
+        decelerationRate="fast"
+        snapToInterval={CAROUSEL_WIDTH}
+        snapToAlignment="start"
+        removeClippedSubviews={false}
+      />
+
+      {/* Pagination Dots */}
+      <View className="flex-row justify-center items-center mt-4">
+        {carouselImages.map((_, index) => (
+          <View
+            key={`dot-${index}`}
+            className={`mx-1 rounded-full ${
+              index === realIndex
+                ? "bg-blue-600 w-8 h-2"
+                : "bg-gray-300 w-2 h-2"
+            }`}
+          />
+        ))}
+      </View>
+    </View>
   );
 };
