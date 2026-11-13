@@ -26,7 +26,9 @@
 			"autoIncrement": true,
 			"environment": "production",
 			"env": {
-				"APP_VARIANT": "production"
+				"APP_VARIANT": "production",
+				"EXPO_PUBLIC_API_BASE_URL": "https://api.bhimbharat.com/api",
+				"EXPO_PUBLIC_WEB_CLIENT_ID": "1001691272873-kl8vjaijrif8vetfd1qr4amfm16057ti.apps.googleusercontent.com"
 			}
 		}
 	},
