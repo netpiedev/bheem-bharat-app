@@ -1,10 +1,14 @@
 import { useLanguage } from "@/app/lib/LanguageContext";
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-import { Platform } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function TabsLayout() {
   const { t } = useLanguage();
+  const insets = useSafeAreaInsets();
+
+  const bottomPadding = Math.max(insets.bottom, 8);
+  const tabHeight = 60 + bottomPadding;
 
   return (
     <Tabs
@@ -20,15 +24,15 @@ export default function TabsLayout() {
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.1,
           shadowRadius: 8,
-          height: Platform.OS === "ios" ? 88 : 70,
+          height: tabHeight,
           paddingTop: 8,
-          paddingBottom: Platform.OS === "ios" ? 28 : 8,
+          paddingBottom: bottomPadding,
           paddingHorizontal: 8,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 10.5,
           fontWeight: "600",
-          marginTop: 4,
+          marginTop: 2,
           marginBottom: 0,
         },
         tabBarIconStyle: {

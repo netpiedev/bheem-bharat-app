@@ -4,6 +4,7 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { KeyboardProvider } from "react-native-keyboard-controller";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { LanguageProvider } from "./lib/LanguageContext";
 import { queryClient } from "./lib/queryClient";
 import setupQueryPersistence from "./lib/queryPersist";
@@ -21,13 +22,15 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <LanguageProvider>
-        <KeyboardProvider>
-          <StatusBar style="dark" />
-          <Stack screenOptions={{ headerShown: false }} />
-        </KeyboardProvider>
-      </LanguageProvider>
-    </QueryClientProvider>
+    <SafeAreaProvider>
+      <QueryClientProvider client={queryClient}>
+        <LanguageProvider>
+          <KeyboardProvider>
+            <StatusBar style="dark" />
+            <Stack screenOptions={{ headerShown: false }} />
+          </KeyboardProvider>
+        </LanguageProvider>
+      </QueryClientProvider>
+    </SafeAreaProvider>
   );
 }
